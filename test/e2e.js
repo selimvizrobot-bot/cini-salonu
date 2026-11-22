@@ -59,6 +59,7 @@ function makeClient() {
       if (fn === 'discover') return asUser(uid, 'select * from public.discover($1)', [a.p_limit]);
       if (fn === 'people') return asUser(uid, 'select * from public.people($1::uuid[])', [a.ids]);
       if (fn === 'delete_me') return asUser(uid, 'select public.delete_me()', []);
+      if (fn === 'yonetici_mi') { const r = await asUser(uid, 'select public.yonetici_mi() as v', []); return r.error ? r : { data: r.data[0].v, error: null }; }
       if (fn === 'harcama_durumu') { const r = await asUser(uid, 'select public.harcama_durumu() as v', []); return r.error ? r : { data: r.data[0].v, error: null }; }
       if (fn === 'harcama_siniri_ayarla') { const r = await asUser(uid, 'select public.harcama_siniri_ayarla($1) as v', [a.n]); return r.error ? r : { data: r.data[0].v, error: null }; }
       if (fn === 'oyun_bileti') { const r = await asUser(uid, 'select public.oyun_bileti($1) as v', [a.g]); return r.error ? r : { data: r.data[0].v, error: null }; }
@@ -235,6 +236,10 @@ await A.w.CiniOdemeTest.kontrol(); await sleep(80);
   ok(/Sınır güncellendi/.test(A.text('#toast')) && +hs.aylik === 100 && hs.yeni === null, 'Sınır 100 ₺\'ye düştü, hemen geçerli');
   A.q('#fHs').value = '500'; A.q('#fHs').dispatchEvent(new A.w.Event('change')); await sleep(120);
   ok(/24 saat/.test(A.text('#toast')) && /yükseltmesi/.test(A.text('#fHarc')) && A.q('#fHs').value === '100', 'Yükseltme 24 saat sonraya kondu: ' + A.text('#toast'));
+  ok(A.text('#fYon') === '', 'Yönetici olmayana yönetim bağlantısı görünmüyor');
+  await pool.query('insert into public.yoneticiler values ($1)', [aId]);
+  A.click(A.btn('Kapat') || '#modal'); await sleep(20); A.click('#bSet'); await sleep(150);
+  ok(/Yönetim paneli/.test(A.text('#fYon')) && A.q('#fYon a').getAttribute('href') === 'yonetim.html', 'Yöneticiye Ayarlar\'da "Yönetim paneli" bağlantısı');
   A.click(A.btn('Kapat') || '#modal'); await sleep(20);
 
   console.log('KVKK silme');

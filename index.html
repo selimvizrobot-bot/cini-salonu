@@ -4,6 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Çini Salonu</title>
+<meta name="description" content="Slot, video poker ve okey: sanal jetonla oyna, tanış, sohbet et. Jetonlar paraya çevrilmez. Yalnız 18+.">
+<meta name="theme-color" content="#3a0a16">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="ikon-32.png">
+<link rel="apple-touch-icon" href="ikon-180.png">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="tr_TR">
+<meta property="og:title" content="Çini Salonu">
+<meta property="og:description" content="Slot · Video Poker · Okey. Oyna, tanış, sohbet et. Sanal jeton, paraya çevrilmez, yalnız 18+.">
+<meta property="og:url" content="https://selimvizrobot-bot.github.io/cini-salonu/">
+<meta property="og:image" content="https://selimvizrobot-bot.github.io/cini-salonu/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <script>/* Supabase bağlantısı: Project Settings → API'den URL ve anon key */window.CINI_CONFIG={url:'https://pranxyonsbbzedvpwnza.supabase.co',key:'sb_publishable_GcSjDcpUQv3RDEaEwsPI0A_k84q0K-l'}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -329,7 +343,7 @@ async function odemeKontrol(){if(!sb||!me||!myP)return;const {data}=await sb.fro
   if(!data||!data.length)return;const r=await odemeCagir({islem:'kontrol'});if(r.eklenen>0){toast(`Ödemen onaylandı: +${fmt(r.eklenen)} elmas`);loadWallet()}}
 
 /* ayarlar */
-function setModal(){const o=(v,arr,lab)=>arr.map(a=>`<option value="${a}" ${+v===a?'selected':''}>${a?a+' dk':lab}</option>`).join('');modal(`<h2>Ayarlar</h2><label class="f">Mola hatırlatıcısı<select id="fRem">${o(S.remind,[0,15,30,60],'Kapalı')}</select></label><label class="f">Günlük oyun süresi sınırı<select id="fLim">${o(S.limit,[0,30,60,120,180],'Sınır yok')}</select></label><p>Bugün oynadığın süre: ${Math.round(S.playedToday/60000)} dk</p>${sb&&me&&myP?'<h4>Elmas harcama sınırı</h4><div id="fHarc">Yükleniyor…</div>':''}<div class="row"><button id="fBreak">Şimdi 15 dk mola</button><button data-close>Kapat</button></div>`);$('#fRem').onchange=e=>{S.remind=+e.target.value;save()};$('#fLim').onchange=e=>{S.limit=+e.target.value;save()};$('#fBreak').onclick=()=>{S.lockUntil=Date.now()+15*60000;save();closeM();toast('Mola başladı.')};if(sb&&me&&myP)harcamaGoster()}
+function setModal(){const o=(v,arr,lab)=>arr.map(a=>`<option value="${a}" ${+v===a?'selected':''}>${a?a+' dk':lab}</option>`).join('');modal(`<h2>Ayarlar</h2><label class="f">Mola hatırlatıcısı<select id="fRem">${o(S.remind,[0,15,30,60],'Kapalı')}</select></label><label class="f">Günlük oyun süresi sınırı<select id="fLim">${o(S.limit,[0,30,60,120,180],'Sınır yok')}</select></label><p>Bugün oynadığın süre: ${Math.round(S.playedToday/60000)} dk</p>${sb&&me&&myP?'<h4>Elmas harcama sınırı</h4><div id="fHarc">Yükleniyor…</div>':''}<p id="fYon"></p><div class="row"><button id="fBreak">Şimdi 15 dk mola</button><button data-close>Kapat</button></div>`);$('#fRem').onchange=e=>{S.remind=+e.target.value;save()};$('#fLim').onchange=e=>{S.limit=+e.target.value;save()};$('#fBreak').onclick=()=>{S.lockUntil=Date.now()+15*60000;save();closeM();toast('Mola başladı.')};if(sb&&me&&myP)harcamaGoster();if(sb&&me)sb.rpc('yonetici_mi').then(r=>{const e=$('#fYon');if(r&&r.data===true&&e)e.innerHTML='<a href="yonetim.html">Yönetim paneli →</a>'},()=>{})}
 const TL=n=>(+n).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₺';
 async function harcamaGoster(){if(!$('#fHarc'))return;const {data:v,error}=await sb.rpc('harcama_durumu');const el=$('#fHarc');if(!el)return;if(error||!v){el.textContent='Sınır bilgisi alınamadı.';return}
   const sec=[0,50,100,250,500,1000];if(!sec.includes(+v.sinir))sec.push(+v.sinir);sec.sort((a,b)=>a-b);
@@ -589,7 +603,7 @@ document.addEventListener('keydown',e=>{if(e.code!=='Space'||!$('#modal').hidden
 
 /* başlangıç */
 dayCheck();S.sb=Math.min(S.sb,maxBetIdx());S.pb=Math.min(S.pb,maxBetIdx());S.ob=Math.min(S.ob,maxBetIdx());oRender();
-renderHand();renderBets();hud();setInterval(()=>{dayCheck();hud();renderPassInfo()},30000);socInit();renderPassInfo();window.CiniOdemeTest={kontrol:odemeKontrol};
+renderHand();renderBets();hud();setInterval(()=>{dayCheck();hud();renderPassInfo()},30000);socInit();renderPassInfo();window.CiniOdemeTest={kontrol:odemeKontrol};if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 if(!S.ageOk){modal(`<h2>18 yaşından büyük müsün?</h2><p>Çini Salonu bir sosyal casino oyunudur. Jetonların gerçek para değeri yoktur; nakde, kriptoya ya da ödüle çevrilemez.</p><div class="row"><button class="big" id="aYes">Evet, 18+</button><button class="ghost" id="aNo">Hayır</button></div>`,false);$('#aYes').onclick=()=>{S.ageOk=true;save();closeM();toast('Hoş geldin! 10.000 jetonla başlıyorsun.');odemeDonus()};$('#aNo').onclick=()=>{$('#mBox').innerHTML='<h2>Üzgünüz</h2><p>Bu oyun yalnızca 18 yaş ve üstü içindir.</p>'}}
 if(S.ageOk)odemeDonus();
 }

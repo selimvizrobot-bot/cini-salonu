@@ -9,13 +9,16 @@ Sosyal casino (sanal jeton, paraya çevrilemez) + gerçek oyuncular arasında g�
 - `supabase/003_bilet.sql` — oyun masası bileti: 1 elmas = 1 saat, oyun başına
 - `supabase/004_odeme.sql` — iyzico ödeme kayıtları; paket fiyatı veritabanında sabit, elmas yalnız doğrulanmış ödemeye bir kez yüklenir
 - `supabase/005_sinir.sql` — aylık harcama sınırı: en fazla 1000 ₺/ay; düşürme hemen, yükseltme 24 saat sonra
+- `supabase/006_yonetim.sql` — yönetim: şikâyet kararları, yasaklama, elmas düzeltme, ödeme listesi; her işlem `yonetim_kayit`'a yazılır
+- `yonetim.html` — yönetim paneli (yalnız `yoneticiler` tablosundakiler açabilir; Ayarlar'da bağlantısı çıkar)
+- `manifest.webmanifest`, `sw.js`, `ikon-*.png`, `og.png` — telefona uygulama gibi kurulum ve paylaşım görseli
 - `supabase/functions/odeme/index.ts` — Edge Function: iyzico Checkout Form başlatma, dönüş doğrulama, yarım kalan ödeme kontrolü
 - `yasal.html` — ön bilgilendirme, mesafeli satış, iade, ödeme KVKK metni (TASLAK)
-- `test/` — yerel testler: `test.sql` (kurallar), `e2e.js` (55 adım, sayfa + veritabanı), `okey.js` (17), `odeme.js` (58: ödeme kuralları + fonksiyon, imza resmi iyzico kütüphanesiyle karşılaştırılır)
+- `test/` — yerel testler: `test.sql` (kurallar), `e2e.js` (57 adım, sayfa + veritabanı), `okey.js` (17), `yonetim.js` (31), `odeme.js` (58: ödeme kuralları + fonksiyon, imza resmi iyzico kütüphanesiyle karşılaştırılır)
 
 ## Kurulum
 1. supabase.com'da yeni proje aç (ücretsiz katman yeterli).
-2. SQL Editor → sırayla `schema.sql`, `002_elmas.sql`, `003_bilet.sql`, `004_odeme.sql`, `005_sinir.sql` dosyalarını yapıştır → Run.
+2. SQL Editor → sırayla `schema.sql`, `002_elmas.sql`, `003_bilet.sql`, `004_odeme.sql`, `005_sinir.sql`, `006_yonetim.sql` dosyalarını yapıştır → Run.
 3. Authentication → Providers → Email açık; "Confirm email" açık kalsın.
 4. Project Settings → API: `Project URL` ve `anon public` anahtarını `index.html` başındaki
    `window.CINI_CONFIG={url:'...',key:'...'}` satırına yaz. (anon anahtar herkese açık olabilir; güvenliği RLS sağlar. `service_role` anahtarını asla sayfaya koyma.)
@@ -31,7 +34,8 @@ Sosyal casino (sanal jeton, paraya çevrilemez) + gerçek oyuncular arasında g�
 - 24 saatte 3 farklı şikâyet ya da "18 yaşından küçük olabilir" şikâyeti → profil otomatik incelemeye alınır.
 - Kullanıcı hesabını ve tüm verilerini tek tuşla silebilir (KVKK).
 
-Şikâyetleri Supabase panelinde `reports` tablosundan incele; gerekirse `profiles.banned = true` yap.
+Şikâyetleri `yonetim.html` panelinden incele: kapat, temize çıkar ya da yasakla. Yönetici eklemek için SQL Editor:
+`insert into public.yoneticiler (user_id) values ('<kullanıcı-id>');`
 
 ## Elmas kuralları
 - Elmas yalnız mağazadan alınır; oyunda kazanılmaz, oyuncular arasında aktarılamaz. Hediyeler alana elmas/jeton olarak geçmez.
@@ -70,5 +74,5 @@ iyzico'nun kabul etmediği iş modelleri arasında kumar/bahis siteleri var; ba�
 initdb + pg_ctl ile yerel Postgres (port 5499, soket /tmp)
 cd test && npm i
 ./kur.sh t2 && psql -h /tmp -p 5499 -U postgres -d t2 -f test.sql   # kural testleri
-node e2e.js && node okey.js && node odeme.js                        # veritabanı gerekenler kendisi kurar
+node e2e.js && node okey.js && node odeme.js && node yonetim.js                       # veritabanı gerekenler kendisi kurar
 ```

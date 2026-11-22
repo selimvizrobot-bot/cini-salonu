@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Çini Salonu · Yönetim</title>
+<script>window.CINI_CONFIG={url:'https://pranxyonsbbzedvpwnza.supabase.co',key:'sb_publishable_GcSjDcpUQv3RDEaEwsPI0A_k84q0K-l'}</script>
+<style>
+:root{color-scheme:dark;--bg:#2a0710;--panel:#3a0a16;--gold:#e8b64a;--ink:#fbeee6;--mut:#d9b8ae;--tq:#19b5a5}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #e8b64a40}
+header b{color:var(--gold);font-size:18px}header a{color:var(--tq);margin-left:auto}
+nav{display:flex;gap:6px;padding:10px 16px;flex-wrap:wrap;max-width:1000px;margin:0 auto}
+nav button{background:#00000040;border:1px solid #e8b64a50;color:var(--ink);border-radius:99px;padding:6px 14px;cursor:pointer;font:inherit}
+nav button[aria-current=page]{background:var(--gold);color:#2a0710;font-weight:700}
+main{padding:4px 16px 40px;max-width:1000px;margin:0 auto}
+.kart{background:var(--panel);border:1px solid #e8b64a30;border-radius:12px;padding:12px 14px;margin:10px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}.grid .kart{margin:0}
+.sayi{font-size:24px;font-weight:700;color:var(--gold)}.mut{color:var(--mut);font-size:13px}
+.ust{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.btns{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.b{border:0;border-radius:8px;padding:6px 12px;cursor:pointer;font:600 14px system-ui,sans-serif;background:#ffffff1c;color:var(--ink)}
+.b.k{background:#c0392b;color:#fff}.b.y{background:var(--tq);color:#00201d}
+.et{display:inline-block;border-radius:6px;padding:1px 8px;font-size:12px;background:#c0392b;color:#fff}.et.s{background:#b9770e}
+input,select{background:#00000040;border:1px solid #e8b64a50;color:var(--ink);border-radius:8px;padding:6px 10px;font:inherit}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;padding:6px 8px;border-bottom:1px solid #ffffff14;vertical-align:top}
+blockquote{margin:6px 0;padding:6px 10px;border-left:3px solid var(--gold);background:#00000030;white-space:pre-wrap;word-break:break-word}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#000d;padding:8px 16px;border-radius:99px;display:none}
+a{color:var(--tq)}
+</style>
+</head>
+<body>
+<header><b>Çini Salonu · Yönetim</b><a href="./">Oyuna dön</a></header>
+<nav id="nav" hidden></nav>
+<main id="app">Yükleniyor…</main>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+{
+const CFG=window.CINI_CONFIG||{},SBJS='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TL=n=>(+n).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₺';
+const tarih=d=>new Date(d).toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const NEDEN={taciz:'Taciz',sahte_profil:'Sahte profil',dolandiricilik:'Dolandırıcılık',cinsel_icerik:'Cinsel içerik',resit_olmayan:'18 yaşından küçük olabilir',diger:'Diğer'};
+const DURUM={odendi:'Ödendi',inceleme:'İncelemede',bekliyor:'Bekliyor',hata:'Tamamlanmadı'};
+const CINS={kadin:'kadın',erkek:'erkek',belirtmek_istemiyorum:'belirtmedi'};
+let sb,sekme='ozet',skDurum='acik',araQ='';
+const toast=t=>{const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.z);toast.z=setTimeout(()=>{e.style.display='none'},2600)};
+const rpc=async(f,a)=>{const {data,error}=await sb.rpc(f,a);if(error){toast(error.message);throw error}return data};
+// tehlikeli işlemler iki tıkla: ilk tık sorar, 4 sn içinde ikinci tık yapar
+const onayla=(b,f)=>{if(b.dataset.onay){f();return}b.dataset.onay='1';const t=b.textContent;b.textContent='Emin misin? '+t;setTimeout(()=>{if(b.isConnected&&b.dataset.onay){delete b.dataset.onay;b.textContent=t}},4000)};
+const SEK={ozet:['Özet',ozet],sikayet:['Şikâyetler',sikayetler],kullanici:['Kullanıcılar',kullanicilar],odeme:['Ödemeler',odemeler]};
+function nav(){const n=$('#nav');n.hidden=false;n.innerHTML=Object.entries(SEK).map(([k,[t]])=>`<button data-s="${k}" ${k===sekme?'aria-current="page"':''}>${t}</button>`).join('');
+  $$('#nav button').forEach(b=>b.onclick=()=>{sekme=b.dataset.s;nav();$('#app').textContent='Yükleniyor…';SEK[sekme][1]().catch(()=>{})})}
+
+async function ozet(){const o=await rpc('yonetim_ozet');const k=(s,t,u='')=>`<div class="kart"><div class="sayi">${s}</div><div class="mut">${t}</div>${u}</div>`;
+  $('#app').innerHTML=`<div class="grid">${k(o.kullanici,'Profil',`<div class="mut">bugün +${o.bugun_yeni}</div>`)}${k(o.acik_sikayet,'Açık şikâyet')}${k(o.incelemede,'İncelemede')}${k(o.yasakli,'Yasaklı')}${k(TL(o.odeme_bugun),'Bugünkü satış')}${k(TL(o.odeme_ay),'Bu ayki satış',`<div class="mut">${o.odeme_ay_adet} ödeme</div>`)}${k(TL(o.odeme_toplam),'Toplam satış')}${k(o.odeme_sorunlu,'Kontrol isteyen ödeme')}</div>
+  <p class="mut">Satış: iyzico'dan doğrulanmış ödemeler, komisyon ve vergi düşülmeden. Şikâyetlere 24 saat içinde dönmek hedeftir.</p>`}
+
+async function sikayetler(){const r=await rpc('yonetim_sikayetler',{p_durum:skDurum==='hepsi'?null:skDurum,p_limit:100});
+  $('#app').innerHTML=`<div class="btns"><select id="skD" aria-label="Şikâyet durumu"><option value="acik">Açık</option><option value="incelendi">İncelenmiş</option><option value="hepsi">Hepsi</option></select></div>`+(r.length?r.map(x=>`<div class="kart" data-r="${x.id}">
+    <div class="ust"><b>${esc(NEDEN[x.reason]||x.reason)}</b><span class="mut">${tarih(x.created_at)} · #${x.id}</span></div>
+    <div>${esc(x.sikayetci)} → <b>${esc(x.hedef_nick)}</b> ${x.hedef_yasakli?'<span class="et">yasaklı</span>':''} ${x.hedef_incelemede?'<span class="et s">incelemede</span>':''} <span class="mut">(hakkında ${x.hedef_sikayet} şikâyet)</span></div>
+    ${x.details?`<div class="mut">Açıklama</div><blockquote>${esc(x.details)}</blockquote>`:''}${x.mesaj?`<div class="mut">Şikâyet edilen mesaj</div><blockquote>${esc(x.mesaj)}</blockquote>`:''}
+    ${x.status==='acik'?`<div class="btns"><button class="b" data-k="kapat">Kapat (işlem yok)</button><button class="b y" data-k="temize_cikar">Temize çıkar</button><button class="b k" data-k="yasakla">Yasakla</button></div>`:'<div class="mut">İncelendi</div>'}</div>`).join(''):'<p>Bu listede şikâyet yok.</p>');
+  $('#skD').value=skDurum;$('#skD').onchange=e=>{skDurum=e.target.value;sikayetler().catch(()=>{})};
+  $$('[data-r] [data-k]').forEach(b=>b.onclick=()=>{const k=b.dataset.k,git=async()=>{try{await rpc('yonetim_karar',{p_rapor:+b.closest('[data-r]').dataset.r,p_karar:k,p_not:null});
+      toast({kapat:'Şikâyet kapatıldı.',temize_cikar:'Kullanıcı temize çıkarıldı.',yasakla:'Kullanıcı yasaklandı.'}[k]);sikayetler().catch(()=>{})}catch(_){}};
+    k==='yasakla'?onayla(b,git):git()})}
+
+async function kullanicilar(){$('#app').innerHTML=`<div class="btns"><input id="kA" placeholder="Takma ad ara" aria-label="Takma ad ara" value="${esc(araQ)}"><button class="b" id="kB">Ara</button></div><div id="kL">Yükleniyor…</div>`;
+  $('#kB').onclick=()=>{araQ=$('#kA').value.trim();kListe().catch(()=>{})};$('#kA').onkeydown=e=>{if(e.key==='Enter')$('#kB').click()};await kListe()}
+async function kListe(){const r=await rpc('yonetim_kullanicilar',{p_ara:araQ,p_limit:50});
+  $('#kL').innerHTML=r.length?r.map(u=>`<div class="kart" data-u="${u.id}"><div class="ust"><b>${esc(u.nick)}</b><span class="mut">katıldı ${tarih(u.created_at)}</span></div>
+    <div class="mut">${esc(CINS[u.gender]||u.gender)}${u.city?' · '+esc(u.city):''} · ${u.elmas} elmas · ${u.sikayet} şikâyet · ödeme ${TL(u.odenen)}</div>
+    <div>${u.banned?'<span class="et">yasaklı</span>':''} ${u.under_review?'<span class="et s">incelemede</span>':''}</div>
+    <div class="btns">${u.banned?'<button class="b y" data-i="yasagi_kaldir">Yasağı kaldır</button>':'<button class="b k" data-i="yasakla">Yasakla</button>'}${u.under_review?'<button class="b" data-i="incelemeden_cikar">İncelemeden çıkar</button>':'<button class="b" data-i="incelemeye_al">İncelemeye al</button>'}</div>
+    <div class="btns"><input type="number" class="eM" placeholder="± elmas" aria-label="Elmas miktarı" style="width:100px"><input class="eN" placeholder="Açıklama (zorunlu)" aria-label="Açıklama" maxlength="200"><button class="b" data-e>Elmas düzelt</button></div></div>`).join(''):'<p>Kullanıcı bulunamadı.</p>';
+  const T={yasakla:'Kullanıcı yasaklandı.',yasagi_kaldir:'Yasak kaldırıldı.',incelemeye_al:'İncelemeye alındı.',incelemeden_cikar:'İncelemeden çıkarıldı.'};
+  $$('[data-u] [data-i]').forEach(b=>b.onclick=()=>{const i=b.dataset.i,git=async()=>{try{await rpc('yonetim_kullanici',{p_user:b.closest('[data-u]').dataset.u,p_islem:i,p_not:null});toast(T[i]);kListe().catch(()=>{})}catch(_){}};
+    i==='yasakla'?onayla(b,git):git()});
+  $$('[data-u] [data-e]').forEach(b=>b.onclick=async()=>{const c=b.closest('[data-u]'),n=parseInt(c.querySelector('.eM').value,10),t=c.querySelector('.eN').value.trim();
+    if(!n||!t){toast('Miktarı ve açıklamayı yaz.');return}
+    try{const y=await rpc('yonetim_elmas',{p_user:c.dataset.u,p_n:n,p_not:t});toast(`Yeni bakiye: ${y} elmas`);kListe().catch(()=>{})}catch(_){}})}
+
+async function odemeler(){const r=await rpc('yonetim_odemeler',{p_limit:100});
+  $('#app').innerHTML=r.length?`<div class="kart" style="overflow-x:auto"><table><tr><th>Tarih</th><th>Kullanıcı</th><th>Paket</th><th>Tutar</th><th>Durum</th><th>iyzico no · not</th></tr>${r.map(o=>`<tr><td>${tarih(o.created_at)}</td><td>${esc(o.nick||'(silinmiş hesap)')}</td><td>${o.elmas} elmas</td><td>${TL(o.tutar)}</td><td>${esc(DURUM[o.durum]||o.durum)}</td><td class="mut">${esc(o.iyzico_payment_id||'')} ${esc(o.hata||'')}</td></tr>`).join('')}</table></div>`:'<p>Henüz ödeme yok.</p>'}
+
+(async()=>{
+  if(!CFG.url||!CFG.key){$('#app').textContent='Sunucu ayarı yok.';return}
+  if(!window.supabase)await new Promise(ok=>{const s=document.createElement('script');s.src=SBJS;s.onload=ok;s.onerror=ok;document.head.appendChild(s)});
+  if(!window.supabase){$('#app').textContent='Sunucu kütüphanesi yüklenemedi. İnternet bağlantını kontrol et.';return}
+  sb=window.supabase.createClient(CFG.url,CFG.key);
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){$('#app').innerHTML='<p>Önce <a href="./">Çini Salonu</a>\'nda yönetici hesabınla giriş yap, sonra bu sayfayı yenile.</p>';return}
+  const {data:yon}=await sb.rpc('yonetici_mi');
+  if(!yon){$('#app').innerHTML='<p>Bu sayfa yalnız yöneticiler içindir.</p>';return}
+  nav();ozet().catch(()=>{});
+})();
+}
+</script>
+</body>
+</html>
