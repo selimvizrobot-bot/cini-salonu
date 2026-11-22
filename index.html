@@ -125,6 +125,14 @@ h4{font:700 16px Rubik,sans-serif;color:var(--gold2);margin:18px 0 10px}
 .nick{background:none;border:0;padding:0;min-height:0;font-size:14px;text-decoration:underline dotted;cursor:pointer}
 .dot{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--gold);color:#3a0a16;font-size:12px;font-weight:800;margin-left:6px}.dot:empty{display:none}
 .box textarea{margin-top:4px}
+.passinfo{margin:-6px 0 14px;font-size:14px;color:var(--mut);min-height:20px}.passinfo b{color:var(--tq)}
+.wallet{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;align-items:center;margin:12px auto 0;font-size:14px;color:var(--mut)}
+.wallet b{font:700 18px Rubik,sans-serif;color:var(--gold2)}.gem{width:18px;height:18px;vertical-align:-3px}
+.gifts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.gifts button{display:grid;justify-items:center;gap:2px;min-height:96px;padding:10px}.gifts svg{width:44px;height:44px}.gifts small{color:var(--mut)}
+.bub.gift{display:flex;gap:8px;align-items:center;background:#e8b64a26;border:1px solid #e8b64a60}.bub.gift svg{width:32px;height:32px;flex:none}
+.bub.gift.me{background:#19b5a533;color:var(--ink);border-color:#19b5a580}
+.ledger{list-style:none;padding:0;margin:8px 0 0;font-size:13px;color:var(--mut)}.ledger li{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid #ffffff10}
 @media(max-width:600px){.dm{grid-template-columns:minmax(0,1fr)}.dml{flex-direction:row;overflow-x:auto}}
 @media(max-width:600px){.acts{margin-left:0;width:100%}.acts button{flex:1;padding:0 8px}.ctrl .big{width:100%}.lvl{max-width:none}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -138,6 +146,7 @@ h4{font:700 16px Rubik,sans-serif;color:var(--gold2);margin:18px 0 10px}
 <symbol id="s-nazar" viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="#1f5fd1"/><circle cx="50" cy="50" r="27" fill="#fff"/><circle cx="50" cy="50" r="18" fill="#5fb8ff"/><circle cx="50" cy="50" r="9" fill="#0b1020"/><circle cx="40" cy="38" r="5" fill="#fff" opacity=".8"/></symbol>
 <symbol id="s-yildiz" viewBox="0 0 100 100"><rect x="21" y="21" width="58" height="58" fill="#e8b64a"/><rect x="21" y="21" width="58" height="58" fill="#e8b64a" transform="rotate(45 50 50)"/><circle cx="50" cy="50" r="18" fill="#19b5a5"/><circle cx="50" cy="50" r="8" fill="#fff1c2"/></symbol>
 <symbol id="s-yedi" viewBox="0 0 100 100"><text x="50" y="82" text-anchor="middle" font-size="88" font-weight="800" fill="#e0314b" stroke="#a8761e" stroke-width="3" font-family="Rubik,sans-serif">7</text></symbol>
+<symbol id="s-elmas" viewBox="0 0 100 100"><path d="M22 36l14-18h28l14 18-28 46z" fill="#7ff0e2"/><path d="M22 36h56L50 82z" fill="#19b5a5"/><path d="M36 18l-4 18 18 46 18-46-4-18" fill="none" stroke="#0e6f66" stroke-width="2.5"/><path d="M22 36h56" stroke="#0e6f66" stroke-width="2.5"/></symbol>
 <symbol id="s-joker" viewBox="0 0 100 100"><polygon points="50,6 90,28 90,72 50,94 10,72 10,28" fill="#e8b64a" stroke="#a8761e" stroke-width="3"/><text x="50" y="58" font-size="19" text-anchor="middle" font-weight="800" fill="#5a0f1f" font-family="Rubik,sans-serif">JOKER</text></symbol>
 </defs></svg>
 
@@ -159,6 +168,7 @@ h4{font:700 16px Rubik,sans-serif;color:var(--gold2);margin:18px 0 10px}
   <div>
     <section id="g-slot" class="machine">
       <div class="marquee">Lale Sarayı</div>
+      <p class="passinfo" id="pi-slot"></p>
       <div class="reels" id="reels"></div>
       <div class="msg" id="sMsg">Bahsini seç ve çevir. 5 çizgi: 3 yatay, 2 çapraz.</div>
       <div class="ctrl">
@@ -169,6 +179,7 @@ h4{font:700 16px Rubik,sans-serif;color:var(--gold2);margin:18px 0 10px}
 
     <section id="g-poker" class="machine" hidden>
       <div class="marquee">Vale ve Üstü</div>
+      <p class="passinfo" id="pi-poker"></p>
       <div class="hand" id="hand"></div>
       <div class="msg" id="pMsg" style="margin-top:34px">Dağıt, tutmak istediğin kartlara dokun, sonra çek.</div>
       <div class="ctrl">
@@ -199,7 +210,7 @@ h4{font:700 16px Rubik,sans-serif;color:var(--gold2);margin:18px 0 10px}
   </aside>
 </main>
 
-<footer>Sosyal casino prototipi · 18+ · Sanal jetonların gerçek para değeri yoktur; nakde, kriptoya ya da ödüle çevrilemez. Tanış bölümünde yalnız gerçek oyuncular vardır; özel mesaj karşılıklı arkadaşlıkla açılır ve parayla satılmaz. Mola hatırlatıcısı ve günlük süre sınırı Ayarlar'dadır.</footer>
+<footer>Sosyal casino prototipi · 18+ · Sanal jetonların gerçek para değeri yoktur; nakde, kriptoya ya da ödüle çevrilemez. Oyun masalarına giriş 1 elmas, bilet 1 saat geçerlidir. Tanış bölümünde yalnız gerçek oyuncular vardır; özel mesaj karşılıklı arkadaşlıkla açılır ve her mesaj 1 elmastır. Elmas oyunda kazanılmaz, oyuncular arasında aktarılamaz; hediyeler elmasa ya da jetona dönüşmez. Mola hatırlatıcısı ve günlük süre sınırı Ayarlar'dadır.</footer>
 
 <div class="modal" id="modal" hidden><div class="box" id="mBox" role="dialog" aria-modal="true"></div></div>
 <div id="toast" role="status"></div>
@@ -251,7 +262,11 @@ modal(`<h2>Günlük çark</h2><p>4 saatte bir ücretsiz çevir.</p><div class="w
 $('#wGo').onclick=()=>{if(!wheelReady())return;const k=Math.floor(Math.random()*n),R=5*360+(360-k*seg)%360,g=$('#wG');S.lastWheel=Date.now();save();$('#wGo').disabled=true;$('#wClose').disabled=true;g.style.transition=RM?'none':'transform 4s cubic-bezier(.17,.67,.2,1)';g.style.transform=`rotate(${R}deg)`;setTimeout(()=>{S.coins+=WH[k];$('#wGo').textContent='+'+fmt(WH[k])+' jeton';$('#wClose').disabled=false;toast(`Çarktan +${fmt(WH[k])} jeton`);hud()},RM?50:4100)}}
 
 /* mağaza (prototip) */
-function shopModal(){const P=[['Kese',20000,'49,99 ₺'],['Sandık',60000,'129,99 ₺'],['Hazine',150000,'279,99 ₺']];modal(`<h2>Mağaza</h2><p>Örnek paketler. Ödeme altyapısı bağlı değil; satın alınan jetonlar paraya çevrilemez.</p><div class="packs">${P.map(p=>`<div class="pack"><b>${p[0]} · ${fmt(p[1])} jeton</b><button disabled>${p[2]}</button><span>Örnek fiyat</span></div>`).join('')}</div><p>Canlı sürümde: aylık harcama sınırı ve harcama geçmişi.</p><div class="row"><button data-close>Kapat</button></div>`)}
+function shopModal(){const P=[['Kese',20000,'49,99 ₺'],['Sandık',60000,'129,99 ₺'],['Hazine',150000,'279,99 ₺']],E=[[50,'29,99 ₺'],[150,'79,99 ₺'],[400,'179,99 ₺']];
+  modal(`<h2>Mağaza</h2><p>Örnek fiyatlar. Ödeme altyapısı henüz bağlı değil.</p>
+  <h4>Elmas · masa bileti, özel mesaj ve hediye için</h4><div class="packs">${E.map(e=>`<div class="pack"><b><svg class="gem" viewBox="0 0 100 100" aria-hidden="true"><use href="#s-elmas"/></svg> ${fmt(e[0])} elmas</b><button disabled>${e[1]}</button><span>Masa bileti 1 (1 saat) · mesaj 1 · oyunda kazanılmaz, aktarılamaz</span></div>`).join('')}</div>
+  <h4>Jeton · oyunlar için</h4><div class="packs">${P.map(p=>`<div class="pack"><b>${p[0]} · ${fmt(p[1])} jeton</b><button disabled>${p[2]}</button><span>Paraya çevrilemez</span></div>`).join('')}</div>
+  <p>Canlı sürümde: aylık harcama sınırı ve harcama geçmişi.</p><div class="row"><button data-close>Kapat</button></div>`)}
 
 /* ayarlar */
 function setModal(){const o=(v,arr,lab)=>arr.map(a=>`<option value="${a}" ${+v===a?'selected':''}>${a?a+' dk':lab}</option>`).join('');modal(`<h2>Ayarlar</h2><label class="f">Mola hatırlatıcısı<select id="fRem">${o(S.remind,[0,15,30,60],'Kapalı')}</select></label><label class="f">Günlük oyun süresi sınırı<select id="fLim">${o(S.limit,[0,30,60,120,180],'Sınır yok')}</select></label><p>Bugün oynadığın süre: ${Math.round(S.playedToday/60000)} dk</p><div class="row"><button id="fBreak">Şimdi 15 dk mola</button><button data-close>Kapat</button></div>`);$('#fRem').onchange=e=>{S.remind=+e.target.value;save()};$('#fLim').onchange=e=>{S.limit=+e.target.value;save()};$('#fBreak').onclick=()=>{S.lockUntil=Date.now()+15*60000;save();closeM();toast('Mola başladı.')}}
@@ -266,7 +281,7 @@ function lineWin(c){const nj=c.filter(s=>s.k!=='joker');if(!nj.length)return SYM
 const cells=[];
 for(let i=0;i<9;i++){const d=document.createElement('div');d.className='cell';d.innerHTML=cellHTML(pick());$('#reels').appendChild(d);cells.push(d)}
 let spinning=false;
-function spin(){if(spinning)return;const bet=BETS[S.sb];if(S.coins<bet)return outOfCoins(bet);if(!canPlay())return;spinning=true;S.coins-=bet;addXp(bet/5);const res=Array.from({length:9},pick);cells.forEach(c=>c.classList.remove('win'));$('#sSpin').disabled=true;$('#sMsg').textContent='Dönüyor…';hud();
+async function spin(){if(spinning)return;const bet=BETS[S.sb];if(S.coins<bet)return outOfCoins(bet);if(!(await ensurePass('slot')))return;if(!canPlay())return;spinning=true;S.coins-=bet;addXp(bet/5);const res=Array.from({length:9},pick);cells.forEach(c=>c.classList.remove('win'));$('#sSpin').disabled=true;$('#sMsg').textContent='Dönüyor…';hud();
 const finish=()=>{let win=0;const hit=[];LINES.forEach(L=>{const m=lineWin(L.map(i=>res[i]));if(m){win+=m*bet/5;hit.push(...L)}});hit.forEach(i=>cells[i].classList.add('win'));S.m.spins++;
 if(win){S.coins+=win;S.m.won+=win;$('#sMsg').innerHTML=win>=bet*10?`<b class="bigwin">Büyük kazanç! +${fmt(win)}</b>`:`Kazandın: <b>+${fmt(win)}</b>`}else $('#sMsg').textContent='Bu tur boş. Tekrar dene.';
 spinning=false;$('#sSpin').disabled=false;hud()};
@@ -284,8 +299,8 @@ if(st&&fl)return rs[0]===10?0:1;if(v[0]===4)return 2;if(v[0]===3&&v[1]===2)retur
 const cardHTML=(c,i)=>c?`<button class="card${c.su==='h'||c.su==='d'?' red':''}${held[i]?' held':''}" data-i="${i}" aria-pressed="${!!held[i]}" aria-label="${RN[c.r]||c.r} ${c.sy}"><span class="cr">${RN[c.r]||c.r}</span><span class="cs">${c.sy}︎</span><span class="cb">${c.sy}︎</span>${held[i]?'<em>TUT</em>':''}</button>`:'<div class="card back"></div>';
 function renderHand(){$('#hand').innerHTML=hand.length?hand.map(cardHTML).join(''):[0,0,0,0,0].map(()=>cardHTML(null)).join('')}
 function renderPT(hi){lastHi=hi;const b=BETS[S.pb];$('#pPay').innerHTML=PT.map((p,i)=>`<tr class="${i===hi?'hi':''}"><td>${p[0]}</td><td>×${p[1]}</td><td>${fmt(p[1]*b)}</td></tr>`).join('')}
-function pDeal(){const bet=BETS[S.pb];
-if(stage===0){if(S.coins<bet)return outOfCoins(bet);if(!canPlay())return;S.coins-=bet;addXp(bet/5);deck=newDeck();hand=deck.splice(0,5);held=[false,false,false,false,false];stage=1;const e=evalHand(hand);$('#pMsg').textContent=e>=0?`Elinde ${PT[e][0]} var. Tutacaklarını seç, sonra çek.`:'Tutmak istediğin kartlara dokun, sonra ÇEK.';$('#pDeal').textContent='ÇEK';renderPT(e);renderHand();hud()}
+async function pDeal(){const bet=BETS[S.pb];
+if(stage===0){if(S.coins<bet)return outOfCoins(bet);if(!(await ensurePass('poker')))return;if(!canPlay())return;S.coins-=bet;addXp(bet/5);deck=newDeck();hand=deck.splice(0,5);held=[false,false,false,false,false];stage=1;const e=evalHand(hand);$('#pMsg').textContent=e>=0?`Elinde ${PT[e][0]} var. Tutacaklarını seç, sonra çek.`:'Tutmak istediğin kartlara dokun, sonra ÇEK.';$('#pDeal').textContent='ÇEK';renderPT(e);renderHand();hud()}
 else{tick();hand=hand.map((c,i)=>held[i]?c:deck.shift());const e=evalHand(hand);stage=0;held=[];renderHand();$('#pDeal').textContent='DAĞIT';renderPT(e);if(e>=0){const w=bet*PT[e][1];S.coins+=w;S.m.won+=w;S.m.pwins++;$('#pMsg').innerHTML=`${PT[e][0]}! <b>+${fmt(w)}</b>`}else $('#pMsg').textContent='Kazanan el yok. Yeniden dağıt.';hud()}}
 
 /* bahis */
@@ -294,7 +309,26 @@ function betStep(key,d){if(key==='pb'&&stage===1)return;if(key==='sb'&&spinning)
 
 /* ───────── sosyal: Tanış + masa sohbeti (Supabase) ───────── */
 const CFG=window.CINI_CONFIG||{},SBJS='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
-let sb=null,me=null,myP=null,socTab='kisiler',room='slot',roomCh=null,dmCh=null,openPeer=null,unread=0;const peers={};
+let sb=null,me=null,myP=null,socTab='kisiler',room='slot',roomCh=null,dmCh=null,openPeer=null,unread=0,elmas=null;const peers={};
+const GIFT={lale:['Lale',2],fincan:['Çay',3],nar:['Nar',5],yildiz:['Çini yıldız',10]};
+let passes={};
+const hm=t=>new Date(t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+function renderPassInfo(){['slot','poker'].forEach(g=>{const el=$('#pi-'+g);if(!el)return;if(!CFG.url||!CFG.key){el.textContent='';return}
+  el.innerHTML=passes[g]>Date.now()?`Masa biletin geçerli · bitiş saati <b>${hm(passes[g])}</b>`:'Masaya giriş 1 elmas · bilet 1 saat geçerli'})}
+async function loadPasses(){passes={};if(sb&&me&&myP){const {data}=await sb.from('game_passes').select('*');(data||[]).forEach(p=>{passes[p.game]=new Date(p.valid_until).getTime()})}renderPassInfo()}
+async function ensurePass(g){
+  if(!CFG.url||!CFG.key)return true;
+  if(!sb){toast('Sunucuya bağlanılıyor, birazdan tekrar dene.');return false}
+  if(!me||!myP){modal(`<h2>Oynamak için giriş yap</h2><p>Oyun masaları elmasla açılır: 1 elmas = 1 saat. Yeni hesaplara 20 elmas hediye.</p><div class="row"><button class="big" id="goSoc">Giriş / kayıt</button><button class="ghost" data-close>Kapat</button></div>`);$('#goSoc').onclick=()=>{closeM();document.querySelector('.tabs button[data-t=sosyal]').click()};return false}
+  if(passes[g]>Date.now())return true;
+  return new Promise(res=>{
+    modal(`<h2>${ROOMN[g]} bileti</h2><p>Masaya giriş <b>1 elmas</b>. Bilet 1 saat geçerli; bu sürede istediğin kadar oynarsın.</p><p>Elmasın: <b>${elmas==null?'…':fmt(elmas)}</b></p><div class="row"><button class="big" id="pGo">Gir · 1 elmas</button><button class="ghost" id="pNo">Vazgeç</button></div><p class="err" id="pE" role="alert"></p>`,false);
+    $('#pNo').onclick=()=>{closeM();res(false)};
+    $('#pGo').onclick=async()=>{const b=$('#pGo');b.disabled=true;const {data,error}=await sb.rpc('oyun_bileti',{g});
+      if(error){b.disabled=false;if(needElmas(error)){closeM();shopModal()}else $('#pE').textContent=errTxt(error);res(false);return}
+      passes[g]=new Date(data).getTime();closeM();toast(`${ROOMN[g]} biletin alındı · bitiş saati ${hm(data)}`);loadWallet();renderPassInfo();res(true)}})}
+async function loadWallet(){if(!sb||!me)return;const {data}=await sb.from('wallets').select('elmas').eq('user_id',me).maybeSingle();elmas=data?data.elmas:0;const n=$('#elmasN');if(n)n.textContent=fmt(elmas)}
+const needElmas=e=>/Elmas/i.test(errTxt(e));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const errTxt=e=>(e&&(e.message||e.error_description))||'Bir hata oldu.';
 const GEN={kadin:'Kadın',erkek:'Erkek',belirtmek_istemiyorum:''};
@@ -307,13 +341,14 @@ async function socInit(){renderSoc();joinRoom();if(!CFG.url||!CFG.key)return;
   if(!window.supabase){renderSoc('Sunucu kütüphanesi yüklenemedi. İnternet bağlantını kontrol et.');return}
   sb=window.supabase.createClient(CFG.url,CFG.key);
   sb.auth.onAuthStateChange((ev,s)=>{const u=s?.user?.id||null;if(u!==me||ev==='INITIAL_SESSION'){me=u;setTimeout(afterAuth,0)}})}
-async function afterAuth(){myP=null;if(me){const {data}=await sb.from('profiles').select('*').eq('id',me).maybeSingle();myP=data||null}subDM();renderSoc();joinRoom()}
+async function afterAuth(){myP=null;elmas=null;if(me){const {data}=await sb.from('profiles').select('*').eq('id',me).maybeSingle();myP=data||null}subDM();renderSoc();joinRoom();loadPasses();if(me&&myP)loadWallet()}
 
 function renderSoc(note){const el=$('#soc');
   if(!sb){el.innerHTML=`<div class="sbox"><h3>Sunucu bağlı değil</h3><p>${esc(note||'Tanış bölümü yalnız gerçek oyuncularla çalışır; sahte profil ya da bot yoktur. Sunucu bağlanınca giriş, profil, arkadaşlık ve mesajlaşma burada açılır.')}</p></div>`;return}
   if(!me){el.innerHTML=authForm();bindAuth();return}
   if(!myP){el.innerHTML=profileForm();bindProfile(false);return}
-  el.innerHTML=`<div class="stabs">${[['kisiler','Kişiler'],['istekler','İstekler'],['mesajlar','Mesajlar'],['profil','Profilim']].map(([k,t])=>`<button data-st="${k}" class="${socTab===k?'on':''}">${t}</button>`).join('')}</div><p class="safe">Güvenliğin için şifre, IBAN ya da adres paylaşma. Para isteyen ya da rahatsız eden kişiyi şikâyet et.</p><div id="sbody"></div>`;
+  el.innerHTML=`<div class="stabs">${[['kisiler','Kişiler'],['istekler','İstekler'],['mesajlar','Mesajlar'],['profil','Profilim']].map(([k,t])=>`<button data-st="${k}" class="${socTab===k?'on':''}">${t}</button>`).join('')}</div><div class="wallet"><span><svg class="gem" viewBox="0 0 100 100" aria-hidden="true"><use href="#s-elmas"/></svg> Elmasın: <b id="elmasN">${elmas==null?'…':fmt(elmas)}</b></span><span>Her özel mesaj 1 elmas</span><button class="sm" id="bElmas">Elmas al</button></div><p class="safe">Güvenliğin için şifre, IBAN ya da adres paylaşma. Para isteyen ya da rahatsız eden kişiyi şikâyet et.</p><div id="sbody"></div>`;
+  $('#bElmas').onclick=shopModal;loadWallet();
   el.querySelector('.stabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;socTab=b.dataset.st;renderSoc()};
   if(socTab==='mesajlar'){unread=0;badge()}
   ({kisiler:viewPeople,istekler:viewRequests,mesajlar:viewMessages,profil:viewProfile})[socTab]()}
@@ -344,9 +379,11 @@ function bindProfile(edit){$('#fProf').onsubmit=async e=>{e.preventDefault();
   const r=edit?await sb.from('profiles').update(v).eq('id',me).select().single()
               :await sb.from('profiles').insert({...v,id:me,birth_date:$('#pBirth').value,kvkk_consent_at:new Date().toISOString(),terms_version:'1.0'}).select().single();
   if(r.error){$('#pErr').textContent=/duplicate|unique/i.test(r.error.message)?'Bu takma ad alınmış.':errTxt(r.error);return}
-  myP=r.data;$('#pErr').textContent=edit?'Kaydedildi.':'';if(!edit){renderSoc();joinRoom()}}}
+  myP=r.data;$('#pErr').textContent=edit?'Kaydedildi.':'';if(!edit){renderSoc();joinRoom();loadPasses();toast('Hoş geldin! Hesabına 20 elmas eklendi.')}}}
 
-function viewProfile(){$('#sbody').innerHTML=profileForm(myP)+'<div class="sbox"><div class="row"><button id="pOut">Çıkış yap</button><button id="pDel" class="ghost">Hesabımı ve verilerimi sil</button></div><p class="err" id="dErr" role="alert"></p></div>';bindProfile(true);
+function viewProfile(){$('#sbody').innerHTML=profileForm(myP)+'<div class="sbox"><h3>Hediyelerin ve elmas geçmişin</h3><div id="pGifts"><p>Yükleniyor…</p></div></div><div class="sbox"><div class="row"><button id="pOut">Çıkış yap</button><button id="pDel" class="ghost">Hesabımı ve verilerimi sil</button></div><p class="err" id="dErr" role="alert"></p></div>';bindProfile(true);
+  Promise.all([sb.from('gifts').select('kind').eq('receiver',me),sb.from('elmas_ledger').select('*').order('created_at',{ascending:false}).limit(10)]).then(([g,l])=>{const c={};(g.data||[]).forEach(x=>{c[x.kind]=(c[x.kind]||0)+1});const R={hosgeldin:'Hoş geldin',mesaj:'Mesaj',hediye:'Hediye',oyun:'Oyun bileti',satin_alma:'Satın alma',iade:'İade',yonetici:'Düzeltme'};const el=$('#pGifts');if(!el)return;
+    el.innerHTML=`<p>Aldığın hediyeler: ${Object.keys(c).length?Object.entries(c).map(([k,n])=>`${esc(GIFT[k][0])} ×${n}`).join(' · '):'henüz yok'}</p><ul class="ledger">${(l.data||[]).map(x=>`<li><span>${R[x.reason]||x.reason} · ${new Date(x.created_at).toLocaleDateString('tr-TR')}</span><b>${x.delta>0?'+':''}${x.delta} elmas</b></li>`).join('')}</ul>`});
   $('#pOut').onclick=()=>sb.auth.signOut();
   $('#pDel').onclick=async()=>{const b=$('#pDel');if(!b.dataset.s){b.dataset.s='1';b.textContent='Eminim, kalıcı olarak sil';$('#dErr').textContent='Profilin, arkadaşlıkların ve mesajların silinir. Geri alınamaz; onaylamak için bir kez daha bas.';return}
     const {error}=await sb.rpc('delete_me');if(error){$('#dErr').textContent=errTxt(error);return}toast('Hesabın silindi.');sb.auth.signOut()}}
@@ -374,17 +411,24 @@ async function viewMessages(){const b=$('#sbody');b.innerHTML='<p class="safe">Y
   if(!fr.length){b.innerHTML='<div class="sbox"><p>Henüz arkadaşın yok. Kişiler bölümünden ya da masa sohbetinden istek gönder; karşı taraf kabul edince burada mesajlaşırsınız.</p></div>';return}
   if(!openPeer||!fr.some(x=>x.id===openPeer))openPeer=fr[0].id;const cur=fr.find(x=>x.id===openPeer);
   b.innerHTML=`<div class="dm"><div class="dml">${fr.map(x=>`<button data-act="chat" data-id="${x.id}" class="${x.id===openPeer?'on':''}">${esc(peers[x.id]?.nick||'Oyuncu')}</button>`).join('')}</div>
-  <div class="dmr"><div class="dmh"><b>${esc(peers[openPeer]?.nick||'')}</b><span><button class="ghost sm" data-act="unf" data-f="${cur.f}">Arkadaşlıktan çıkar</button><button class="ghost sm" data-act="more" data-id="${openPeer}">Engelle / şikâyet</button></span></div>
-  <div class="thread" id="thread" aria-live="polite"></div><form id="fDm" class="send"><input id="dmIn" maxlength="500" placeholder="Mesaj yaz" autocomplete="off" aria-label="Mesaj"><button class="big sm" type="submit">Gönder</button></form></div></div>`;
-  $('#fDm').onsubmit=async e=>{e.preventDefault();const t=$('#dmIn').value.trim();if(!t)return;const {data:m,error:er}=await sb.from('messages').insert({receiver:openPeer,body:t}).select().single();if(er){toast(errTxt(er));return}$('#dmIn').value='';addMsg(m)};
-  const {data:ms}=await sb.from('messages').select('*').or(`and(sender.eq.${me},receiver.eq.${openPeer}),and(sender.eq.${openPeer},receiver.eq.${me})`).order('created_at',{ascending:true}).limit(100);
-  (ms||[]).forEach(addMsg);
+  <div class="dmr"><div class="dmh"><b>${esc(peers[openPeer]?.nick||'')}</b><span><button class="sm" data-act="gift" data-id="${openPeer}">Hediye gönder</button><button class="ghost sm" data-act="unf" data-f="${cur.f}">Arkadaşlıktan çıkar</button><button class="ghost sm" data-act="more" data-id="${openPeer}">Engelle / şikâyet</button></span></div>
+  <div class="thread" id="thread" aria-live="polite"></div><form id="fDm" class="send"><input id="dmIn" maxlength="500" placeholder="Mesaj yaz (1 elmas)" autocomplete="off" aria-label="Mesaj"><button class="big sm" type="submit">Gönder</button></form></div></div>`;
+  $('#fDm').onsubmit=async e=>{e.preventDefault();const t=$('#dmIn').value.trim();if(!t)return;const {data:m,error:er}=await sb.from('messages').insert({receiver:openPeer,body:t}).select().single();if(er){toast(errTxt(er));if(needElmas(er))shopModal();return}$('#dmIn').value='';addMsg(m);loadWallet()};
+  const pair=`and(sender.eq.${me},receiver.eq.${openPeer}),and(sender.eq.${openPeer},receiver.eq.${me})`;
+  const [{data:ms},{data:gs}]=await Promise.all([sb.from('messages').select('*').or(pair).order('created_at',{ascending:true}).limit(100),sb.from('gifts').select('*').or(pair).order('created_at',{ascending:true}).limit(50)]);
+  [...(ms||[]),...(gs||[]).map(g=>({...g,_gift:true}))].sort((a,b)=>a.created_at<b.created_at?-1:1).forEach(x=>x._gift?addGift(x):addMsg(x));
   sb.from('messages').update({read_at:new Date().toISOString()}).eq('receiver',me).eq('sender',openPeer).is('read_at',null).then(()=>{})}
+function addGift(g){const th=$('#thread');if(!th||th.querySelector(`[data-gid="${g.id}"]`))return;const mine=g.sender===me,G=GIFT[g.kind]||['Hediye',0];th.insertAdjacentHTML('beforeend',`<div class="bub gift${mine?' me':''}" data-gid="${g.id}"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#s-${g.kind}"/></svg><span>${mine?`${esc(G[0])} gönderdin`:`${esc(peers[g.sender]?.nick||'Arkadaşın')} sana ${esc(G[0].toLowerCase())} gönderdi`}<time>${new Date(g.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</time></span></div>`);th.scrollTop=th.scrollHeight}
+function giftModal(id){const p=peers[id]||{nick:'Arkadaşın'};
+  modal(`<h2>${esc(p.nick)} için hediye</h2><p>Hediye elmasınla ödenir. Karşı taraf hediyeyi görür; hediye elmasa ya da jetona dönüşmez.</p><div class="gifts">${Object.entries(GIFT).map(([k,[n,f]])=>`<button data-k="${k}"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#s-${k}"/></svg>${n}<small>${f} elmas</small></button>`).join('')}</div><p>Elmasın: <b>${elmas==null?'…':fmt(elmas)}</b></p><div class="row"><button class="ghost" data-close>Kapat</button></div><p class="err" id="gErr" role="alert"></p>`);
+  $('#mBox').querySelector('.gifts').onclick=async e=>{const b=e.target.closest('button[data-k]');if(!b)return;b.disabled=true;const {data:g,error}=await sb.from('gifts').insert({receiver:id,kind:b.dataset.k}).select().single();b.disabled=false;
+    if(error){$('#gErr').textContent=errTxt(error);if(needElmas(error)){closeM();shopModal()}return}closeM();toast(`${GIFT[g.kind][0]} gönderildi`);addGift(g);loadWallet()}}
 function addMsg(m){const th=$('#thread');if(!th||th.querySelector(`[data-mid="${m.id}"]`))return;th.insertAdjacentHTML('beforeend',`<div class="bub${m.sender===me?' me':''}" data-mid="${m.id}">${esc(m.body)}<time>${new Date(m.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</time></div>`);th.scrollTop=th.scrollHeight}
 
 async function personActs(e){const t=e.target.closest('[data-act]');if(!t)return;const a=t.dataset.act,id=t.dataset.id;
   if(a==='req'){t.disabled=true;const {error}=await sb.from('friendships').insert({addressee:id});if(error){t.disabled=false;toast(errTxt(error))}else t.textContent='İstek gönderildi'}
   else if(a==='more')personModal(id);
+  else if(a==='gift')giftModal(id);
   else if(a==='chat'){openPeer=id;renderSoc()}
   else if(a==='acc'){const {error}=await sb.from('friendships').update({status:'kabul'}).eq('id',t.dataset.f);if(error)toast(errTxt(error));else{toast('Artık arkadaşsınız. Mesajlar bölümünden yazabilirsin.');renderSoc()}}
   else if(a==='rej'||a==='unf'){const {error}=await sb.from('friendships').delete().eq('id',t.dataset.f);if(error)toast(errTxt(error));else renderSoc()}}
@@ -402,6 +446,8 @@ function subDM(){if(dmCh){sb.removeChannel(dmCh);dmCh=null}if(!sb||!me)return;
   dmCh=sb.channel('dm-'+me)
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`receiver=eq.${me}`},({new:m})=>{if(socOpen()&&socTab==='mesajlar'&&openPeer===m.sender)addMsg(m);else{unread++;badge();toast(`${peers[m.sender]?.nick||'Bir arkadaşın'}: yeni mesaj`)}})
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'friendships',filter:`addressee=eq.${me}`},()=>{toast('Yeni arkadaşlık isteğin var');if(socOpen()&&socTab==='istekler')renderSoc()})
+   .on('postgres_changes',{event:'INSERT',schema:'public',table:'gifts',filter:`receiver=eq.${me}`},({new:g})=>{if(socOpen()&&socTab==='mesajlar'&&openPeer===g.sender)addGift(g);else toast(`${peers[g.sender]?.nick||'Bir arkadaşın'} sana ${(GIFT[g.kind]||['hediye'])[0].toLowerCase()} gönderdi`)})
+   .on('postgres_changes',{event:'*',schema:'public',table:'wallets',filter:`user_id=eq.${me}`},()=>loadWallet())
    .subscribe()}
 
 function joinRoom(r){if(r)room=r;$('#roomT').textContent=ROOMN[room]+' sohbeti';if(roomCh&&sb){sb.removeChannel(roomCh);roomCh=null}
@@ -427,7 +473,7 @@ document.addEventListener('keydown',e=>{if(e.code!=='Space'||!$('#modal').hidden
 
 /* başlangıç */
 dayCheck();S.sb=Math.min(S.sb,maxBetIdx());S.pb=Math.min(S.pb,maxBetIdx());
-renderHand();renderBets();hud();setInterval(()=>{dayCheck();hud()},30000);socInit();
+renderHand();renderBets();hud();setInterval(()=>{dayCheck();hud();renderPassInfo()},30000);socInit();renderPassInfo();
 if(!S.ageOk){modal(`<h2>18 yaşından büyük müsün?</h2><p>Çini Salonu bir sosyal casino oyunudur. Jetonların gerçek para değeri yoktur; nakde, kriptoya ya da ödüle çevrilemez.</p><div class="row"><button class="big" id="aYes">Evet, 18+</button><button class="ghost" id="aNo">Hayır</button></div>`,false);$('#aYes').onclick=()=>{S.ageOk=true;save();closeM();toast('Hoş geldin! 10.000 jetonla başlıyorsun.')};$('#aNo').onclick=()=>{$('#mBox').innerHTML='<h2>Üzgünüz</h2><p>Bu oyun yalnızca 18 yaş ve üstü içindir.</p>'}}
 }
 </script>
