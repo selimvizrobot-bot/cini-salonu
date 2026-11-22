@@ -10,15 +10,17 @@ Sosyal casino (sanal jeton, paraya çevrilemez) + gerçek oyuncular arasında g�
 - `supabase/004_odeme.sql` — iyzico ödeme kayıtları; paket fiyatı veritabanında sabit, elmas yalnız doğrulanmış ödemeye bir kez yüklenir
 - `supabase/005_sinir.sql` — aylık harcama sınırı: en fazla 1000 ₺/ay; düşürme hemen, yükseltme 24 saat sonra
 - `supabase/006_yonetim.sql` — yönetim: şikâyet kararları, yasaklama, elmas düzeltme, ödeme listesi; her işlem `yonetim_kayit`'a yazılır
+- `supabase/007_play.sql` — Google Play ödemeleri: alım öncesi sınır denetimi, token başına tek yükleme (`kaynak = 'play'`)
+- `android/` — Google Play için TWA uygulaması (Bubblewrap; Google Play ödeme sistemi açık)
 - `yonetim.html` — yönetim paneli (yalnız `yoneticiler` tablosundakiler açabilir; Ayarlar'da bağlantısı çıkar)
 - `manifest.webmanifest`, `sw.js`, `ikon-*.png`, `og.png` — telefona uygulama gibi kurulum ve paylaşım görseli
 - `supabase/functions/odeme/index.ts` — Edge Function: iyzico Checkout Form başlatma, dönüş doğrulama, yarım kalan ödeme kontrolü
 - `yasal.html` — ön bilgilendirme, mesafeli satış, iade, ödeme KVKK metni (TASLAK)
-- `test/` — yerel testler: `test.sql` (kurallar), `e2e.js` (57 adım, sayfa + veritabanı), `okey.js` (17), `yonetim.js` (31), `odeme.js` (66: ödeme kuralları + fonksiyon, imza resmi iyzico kütüphanesiyle karşılaştırılır)
+- `test/` — yerel testler: `test.sql` (kurallar), `e2e.js` (65 adım, sayfa + veritabanı), `okey.js` (17), `yonetim.js` (31), `odeme.js` (79: ödeme kuralları + fonksiyon, imza resmi iyzico kütüphanesiyle karşılaştırılır)
 
 ## Kurulum
 1. supabase.com'da yeni proje aç (ücretsiz katman yeterli).
-2. SQL Editor → sırayla `schema.sql`, `002_elmas.sql`, `003_bilet.sql`, `004_odeme.sql`, `005_sinir.sql`, `006_yonetim.sql` dosyalarını yapıştır → Run.
+2. SQL Editor → sırayla `schema.sql`, `002_elmas.sql`, `003_bilet.sql`, `004_odeme.sql`, `005_sinir.sql`, `006_yonetim.sql`, `007_play.sql` dosyalarını yapıştır → Run.
 3. Authentication → Providers → Email açık; "Confirm email" açık kalsın.
 4. Project Settings → API: `Project URL` ve `anon public` anahtarını `index.html` başındaki
    `window.CINI_CONFIG={url:'...',key:'...'}` satırına yaz. (anon anahtar herkese açık olabilir; güvenliği RLS sağlar. `service_role` anahtarını asla sayfaya koyma.)
@@ -44,6 +46,17 @@ Sosyal casino (sanal jeton, paraya çevrilemez) + gerçek oyuncular arasında g�
 - Paketler: 50 elmas 29,99 ₺ · 150 elmas 79,99 ₺ · 400 elmas 179,99 ₺ (fiyat `paket_bilgi()` içinde). Jeton satılmaz.
 - Elle yükleme / telafi gerekirse: SQL Editor →
   `select public.admin_elmas_ekle('<kullanıcı-id>', 150, 'satin_alma', '<ödeme-no>');`
+
+## Google Play (Android uygulaması)
+Uygulama siteyi `?app=android` ile açar; uygulama içinde mağaza iyzico yerine Google Play ödeme sistemini kullanır (Play kuralı).
+Akış: `play_on` (profil + aylık sınır) → Google Play ödeme ekranı → `play_dogrula` (fonksiyon satın almayı Google Play Developer API'den doğrular) → `play_tamamla` elmas yükler → uygulama satın almayı tüketir (yeniden alınabilir olur).
+Doğrulanıp tüketilmemiş alımlar uygulama açılışında yeniden denenir.
+
+Kurulum:
+1. Play Console'da uygulama içi ürünler: `e50`, `e150`, `e400` (tek seferlik, tüketilebilir).
+2. Google Cloud'da hizmet hesabı + JSON anahtarı; Play Console → Kullanıcılar ve izinler → bu hesaba "Finansal verileri görüntüleme / siparişleri yönetme" izni.
+3. Edge Functions → Secrets: `GOOGLE_PLAY_SA` = JSON anahtarın tamamı. Paket adı farklıysa `PLAY_PAKET`.
+4. Site köküne Digital Asset Links: `https://selimvizrobot-bot.github.io/.well-known/assetlinks.json` (imza anahtarının SHA-256 parmak izi).
 
 ## iyzico ödeme
 Akış: Mağaza → fatura formu + onaylar → `odeme` fonksiyonu kayıt açar, iyzico Checkout Form başlatır → kullanıcı iyzico sayfasında öder

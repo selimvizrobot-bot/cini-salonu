@@ -75,10 +75,10 @@ function makeClient() {
   return { createClient: () => sb, uid: () => uid, fx };
 }
 
-function open(hash = '') {
+function open(hash = '', ek) {
   const mock = makeClient(), gidilen = [];
   const dom = new JSDOM(HTML, { url: 'http://localhost/' + hash, runScripts: 'dangerously', pretendToBeVisual: true,
-    beforeParse(w) { w.matchMedia = () => ({ matches: true }); w.supabase = mock; w.CiniGit = u => gidilen.push(u); } });
+    beforeParse(w) { w.matchMedia = () => ({ matches: true }); w.supabase = mock; w.CiniGit = u => gidilen.push(u); if (ek) ek(w); } });
   const w = dom.window, d = w.document, q = s => d.querySelector(s);
   return { w, d, q, mock, gidilen,
     click: s => { const e = typeof s === 'string' ? q(s) : s; if (!e) throw new Error('yok: ' + s); e.click(); },
@@ -241,6 +241,34 @@ await A.w.CiniOdemeTest.kontrol(); await sleep(80);
   A.click(A.btn('Kapat') || '#modal'); await sleep(20); A.click('#bSet'); await sleep(150);
   ok(/Yönetim paneli/.test(A.text('#fYon')) && A.q('#fYon a').getAttribute('href') === 'yonetim.html', 'Yöneticiye Ayarlar\'da "Yönetim paneli" bağlantısı');
   A.click(A.btn('Kapat') || '#modal'); await sleep(20);
+
+  console.log('Android uygulaması (Google Play)');
+  const tuket = [], pay = {}, TK1 = 'ptok-onceki-' + 'x'.repeat(20), TK2 = 'ptok-yeni-' + 'y'.repeat(20);
+  const AN = open('?app=android', w => {
+    w.getDigitalGoodsService = async id => id === 'https://play.google.com/billing' ? {
+      getDetails: async ids => ids.map(i => ({ itemId: i, title: i, price: { currency: 'TRY', value: { e50: '34.99', e150: '89.99', e400: '199.99' }[i] } })),
+      listPurchases: async () => [{ itemId: 'e50', purchaseToken: TK1 }],
+      consume: async t => { tuket.push(t); } } : null;
+    w.PaymentRequest = class { constructor(m) { this.m = m; } async show() { pay.sku = this.m[0].data.sku; pay.yontem = this.m[0].supportedMethods; return { details: { purchaseToken: TK2 }, complete: async s => { pay.tamam = s; } }; } };
+  });
+  await sleep(50);
+  const afx = AN.mock.fx;
+  afx.yanit = async b => ({ data: b.islem === 'play_on' ? { ok: true } : b.islem === 'play_dogrula' ? { ok: true, durum: 'ok', eklenen: b.paket === 'e50' ? 50 : 150 } : {}, error: null });
+  await signup(AN, 'android@x.test', { nick: 'Android_1', birth: '1990-01-01', gender: 'erkek', look: 'kadin' }); await sleep(250);
+  await AN.w.CiniOdemeTest.playBekleyenler(); await sleep(100); // uygulama açılışında afterAuth bunu çağırır
+  ok(tuket.includes(TK1) && afx.calls.some(c => c.body.islem === 'play_dogrula' && c.body.token === TK1), 'Uygulama açılınca yarım kalmış Play alımı doğrulanıp tüketildi');
+  AN.click('#bShop'); await sleep(100);
+  ok(/Google Play ile alınır/.test(AN.text('#mBox')) && !/iyzico/.test(AN.text('#mBox')), 'Uygulamada mağaza Google Play diyor, iyzico yok');
+  ok(/89,99/.test(AN.q('#mBox [data-pk="e150"]').textContent), 'Fiyat Google Play\'den geldi: ' + AN.q('#mBox [data-pk="e150"]').textContent);
+  AN.click('#mBox [data-pk="e150"]'); await sleep(50);
+  ok(!AN.q('#fBuy') && !!AN.q('#pGo'), 'Fatura formu yok, Google Play onay ekranı var');
+  AN.click('#pGo'); await sleep(200);
+  ok(pay.sku === 'e150' && pay.yontem === 'https://play.google.com/billing' && pay.tamam === 'success' && tuket.includes(TK2) && /\+150 elmas/.test(AN.text('#toast')), 'Google Play ile alındı, sunucuda doğrulandı, tüketildi');
+  ok(afx.calls.findIndex(c => c.body.islem === 'play_on') < afx.calls.findIndex(c => c.body.token === TK2), 'Önce sınır denetimi, sonra ödeme');
+  afx.yanit = async b => ({ data: null, error: { context: { json: async () => ({ hata: 'Bu alım aylık harcama sınırını aşıyor (bu ay 990,00 ₺, sınır 1.000,00 ₺).' }) } } });
+  const once = pay.sku; pay.sku = null; AN.click('#bShop'); await sleep(60); AN.click('#mBox [data-pk="e50"]'); await sleep(40); AN.click('#pGo'); await sleep(120);
+  ok(pay.sku === null && /sınırını aşıyor/.test(AN.text('#pE')), 'Sınır aşılırsa Google Play ödeme ekranı hiç açılmıyor');
+  ok(/Google Play ile alınır/.test(AN.text('#odYol')) && /iyzico/.test(A.text('#odYol')), 'Alt bilgi: uygulamada Google Play, tarayıcıda iyzico');
 
   console.log('KVKK silme');
   B.tab('sosyal'); B.click(B.btn('Profilim')); await sleep(100);

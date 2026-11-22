@@ -249,7 +249,7 @@ h4{font:700 16px Rubik,sans-serif;color:var(--gold2);margin:18px 0 10px}
   </aside>
 </main>
 
-<footer>Sosyal casino prototipi · 18+ · Sanal jetonların gerçek para değeri yoktur; nakde, kriptoya ya da ödüle çevrilemez. Oyun masalarına giriş 1 elmas, bilet 1 saat geçerlidir. Tanış bölümünde yalnız gerçek oyuncular vardır; özel mesaj karşılıklı arkadaşlıkla açılır ve her mesaj 1 elmastır. Elmas oyunda kazanılmaz, oyuncular arasında aktarılamaz; hediyeler elmasa ya da jetona dönüşmez. Mola hatırlatıcısı ve günlük süre sınırı Ayarlar'dadır. Elmas ödemeleri iyzico ile alınır · <a href="yasal.html">Satış koşulları, iade ve KVKK</a></footer>
+<footer>Sosyal casino prototipi · 18+ · Sanal jetonların gerçek para değeri yoktur; nakde, kriptoya ya da ödüle çevrilemez. Oyun masalarına giriş 1 elmas, bilet 1 saat geçerlidir. Tanış bölümünde yalnız gerçek oyuncular vardır; özel mesaj karşılıklı arkadaşlıkla açılır ve her mesaj 1 elmastır. Elmas oyunda kazanılmaz, oyuncular arasında aktarılamaz; hediyeler elmasa ya da jetona dönüşmez. Mola hatırlatıcısı ve günlük süre sınırı Ayarlar'dadır. <span id="odYol">Elmas ödemeleri iyzico ile alınır</span> · <a href="yasal.html">Satış koşulları, iade ve KVKK</a></footer>
 
 <div class="modal" id="modal" hidden><div class="box" id="mBox" role="dialog" aria-modal="true"></div></div>
 <div id="toast" role="status"></div>
@@ -302,10 +302,31 @@ $('#wGo').onclick=()=>{if(!wheelReady())return;const k=Math.floor(Math.random()*
 
 /* mağaza · elmas iyzico ile */
 const PK={e50:[50,'29,99 ₺'],e150:[150,'79,99 ₺'],e400:[400,'179,99 ₺']};
+// Android uygulaması (Google Play) içinde mi? Uygulama ?app=android ile açılır; oturum boyunca hatırlanır.
+const UYG=(()=>{try{if(/[?&]app=android\b/.test(location.search))sessionStorage.setItem('cini-uyg','1');return sessionStorage.getItem('cini-uyg')==='1'}catch(_){return false}})();
+let dgs=null;
+async function playHazir(){if(!UYG||!('getDigitalGoodsService' in window))return null;if(!dgs){try{dgs=await window.getDigitalGoodsService('https://play.google.com/billing')}catch(_){dgs=null}}return dgs}
 function shopModal(){
   modal(`<h2>Mağaza</h2><h4>Elmas · masa bileti, özel mesaj ve hediye için</h4><div class="packs">${Object.entries(PK).map(([k,e])=>`<div class="pack"><b><svg class="gem" viewBox="0 0 100 100" aria-hidden="true"><use href="#s-elmas"/></svg> ${fmt(e[0])} elmas</b><button data-pk="${k}">${e[1]}</button><span>Masa bileti 1 (1 saat) · mesaj 1 · oyunda kazanılmaz, aktarılamaz, paraya çevrilmez</span></div>`).join('')}</div>
-  <p>Jeton satılmaz; çarktan ve saatlik dolumdan ücretsiz gelir.</p><div id="mHist"></div><p>Ödeme iyzico'nun güvenli sayfasında alınır, kart bilgin bize gelmez. <a href="yasal.html" target="_blank" rel="noopener">Satış koşulları ve iade</a></p><div class="row"><button data-close>Kapat</button></div>`);
-  document.querySelectorAll('#mBox [data-pk]').forEach(b=>b.onclick=()=>buyModal(b.dataset.pk));if(sb&&me&&myP)magazaBilgi()}
+  <p>Jeton satılmaz; çarktan ve saatlik dolumdan ücretsiz gelir.</p><div id="mHist"></div><p>${UYG?'Ödeme Google Play ile alınır.':'Ödeme iyzico\'nun güvenli sayfasında alınır, kart bilgin bize gelmez.'} <a href="yasal.html" target="_blank" rel="noopener">Satış koşulları ve iade</a></p><div class="row"><button data-close>Kapat</button></div>`);
+  document.querySelectorAll('#mBox [data-pk]').forEach(b=>b.onclick=()=>UYG?playAl(b.dataset.pk):buyModal(b.dataset.pk));if(sb&&me&&myP)magazaBilgi();
+  if(UYG)playHazir().then(v=>v&&v.getDetails(Object.keys(PK))).then(l=>(l||[]).forEach(d=>{const b=document.querySelector(`#mBox [data-pk="${d.itemId}"]`);if(b&&d.price)b.textContent=new Intl.NumberFormat('tr-TR',{style:'currency',currency:d.price.currency}).format(+d.price.value)})).catch(()=>{})}
+// Google Play ile alım (yalnız Android uygulamasında)
+async function playAl(k){const p=PK[k];if(!p)return;
+  if(!sb){toast('Sunucuya bağlanılıyor, birazdan tekrar dene.');return}
+  if(!me||!myP){girisIste('Elmas almak için giriş yap');return}
+  if(!await playHazir()){toast('Google Play ödemesi bu cihazda kullanılamıyor.');return}
+  modal(`<h2>${fmt(p[0])} elmas</h2><p>Ödeme Google Play ile alınır. Elmaslar onaydan hemen sonra hesabına yüklenir; dijital içerik olduğu için cayma hakkı yoktur.</p><p><a href="yasal.html#sozlesme" target="_blank" rel="noopener">Satış koşulları</a></p><div class="row"><button class="big" id="pGo">Google Play ile al</button><button class="ghost" data-close>Vazgeç</button></div><p class="err" id="pE" role="alert"></p>`);
+  $('#pGo').onclick=async()=>{const b=$('#pGo'),E=t=>{const e=$('#pE');if(e)e.textContent=t};b.disabled=true;E('');
+    const on=await odemeCagir({islem:'play_on',paket:k});if(on.hata){E(on.hata);b.disabled=false;return}
+    let res;try{res=await new PaymentRequest([{supportedMethods:'https://play.google.com/billing',data:{sku:k}}]).show()}catch(e){b.disabled=false;E(e&&e.name==='AbortError'?'':'Satın alma açılamadı.');return}
+    const v=await playYukle(k,res.details&&res.details.purchaseToken);
+    try{await res.complete(v.ok?'success':'fail')}catch(_){}
+    if(v.ok){closeM();toast(`+${fmt(v.eklenen||p[0])} elmas yüklendi`);loadWallet()}else{b.disabled=false;E(v.hata||'Satın alma doğrulanamadı.')}}}
+async function playYukle(k,token){if(!token)return {hata:'Satın alma jetonu gelmedi.'};const v=await odemeCagir({islem:'play_dogrula',paket:k,token});if(v.ok){try{await dgs.consume(token)}catch(_){}}return v}
+// uygulama açılınca: önceki oturumda doğrulanamamış Play alımları
+async function playBekleyenler(){const v=await playHazir();if(!v||!sb||!me||!myP)return;let l=[];try{l=await v.listPurchases()}catch(_){return}
+  for(const x of l){const r=await playYukle(x.itemId,x.purchaseToken);if(r.ok&&r.durum==='ok'){toast(`Önceki satın alman yüklendi: +${fmt(r.eklenen)} elmas`);loadWallet()}}}
 async function magazaBilgi(){const [{data:v},{data:o}]=await Promise.all([sb.rpc('harcama_durumu'),sb.from('odemeler').select('paket,elmas,tutar,durum,created_at').order('created_at',{ascending:false}).limit(5)]);
   const el=$('#mHist');if(!el)return;const D={odendi:'Yüklendi',inceleme:'Kontrol ediliyor',bekliyor:'Bekliyor',hata:'Tamamlanmadı'};
   el.innerHTML=(v?`<p>Bu ay: <b>${TL(v.harcanan)}</b> / ${TL(v.sinir)} aylık sınır · <a href="#" id="mSinir">değiştir</a></p>`:'')+(o&&o.length?`<h4>Satın alımlarım</h4><ul class="ledger">${o.map(x=>`<li><span>${new Date(x.created_at).toLocaleDateString('tr-TR')} · ${fmt(x.elmas)} elmas · ${TL(x.tutar)}</span><b>${D[x.durum]||esc(x.durum)}</b></li>`).join('')}</ul>`:'');
@@ -420,7 +441,7 @@ async function socInit(){renderSoc();joinRoom();if(!CFG.url||!CFG.key)return;
   if(!window.supabase){renderSoc('Sunucu kütüphanesi yüklenemedi. İnternet bağlantını kontrol et.');return}
   sb=window.supabase.createClient(CFG.url,CFG.key);
   sb.auth.onAuthStateChange((ev,s)=>{const u=s?.user?.id||null;if(u!==me||ev==='INITIAL_SESSION'){me=u;setTimeout(afterAuth,0)}})}
-async function afterAuth(){myP=null;elmas=null;if(me){const {data}=await sb.from('profiles').select('*').eq('id',me).maybeSingle();myP=data||null}subDM();renderSoc();joinRoom();loadPasses();if(me&&myP){loadWallet();odemeKontrol()}}
+async function afterAuth(){myP=null;elmas=null;if(me){const {data}=await sb.from('profiles').select('*').eq('id',me).maybeSingle();myP=data||null}subDM();renderSoc();joinRoom();loadPasses();if(me&&myP){loadWallet();odemeKontrol();if(UYG)playBekleyenler()}}
 
 function renderSoc(note){const el=$('#soc');
   if(!sb){el.innerHTML=`<div class="sbox"><h3>Sunucu bağlı değil</h3><p>${esc(note||'Tanış bölümü yalnız gerçek oyuncularla çalışır; sahte profil ya da bot yoktur. Sunucu bağlanınca giriş, profil, arkadaşlık ve mesajlaşma burada açılır.')}</p></div>`;return}
@@ -603,7 +624,7 @@ document.addEventListener('keydown',e=>{if(e.code!=='Space'||!$('#modal').hidden
 
 /* başlangıç */
 dayCheck();S.sb=Math.min(S.sb,maxBetIdx());S.pb=Math.min(S.pb,maxBetIdx());S.ob=Math.min(S.ob,maxBetIdx());oRender();
-renderHand();renderBets();hud();setInterval(()=>{dayCheck();hud();renderPassInfo()},30000);socInit();renderPassInfo();window.CiniOdemeTest={kontrol:odemeKontrol};if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+renderHand();renderBets();hud();setInterval(()=>{dayCheck();hud();renderPassInfo()},30000);socInit();renderPassInfo();window.CiniOdemeTest={kontrol:odemeKontrol,playBekleyenler};if(UYG){const e=$('#odYol');if(e)e.textContent='Elmas ödemeleri Google Play ile alınır'}if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 if(!S.ageOk){modal(`<h2>18 yaşından büyük müsün?</h2><p>Çini Salonu bir sosyal casino oyunudur. Jetonların gerçek para değeri yoktur; nakde, kriptoya ya da ödüle çevrilemez.</p><div class="row"><button class="big" id="aYes">Evet, 18+</button><button class="ghost" id="aNo">Hayır</button></div>`,false);$('#aYes').onclick=()=>{S.ageOk=true;save();closeM();toast('Hoş geldin! 10.000 jetonla başlıyorsun.');odemeDonus()};$('#aNo').onclick=()=>{$('#mBox').innerHTML='<h2>Üzgünüz</h2><p>Bu oyun yalnızca 18 yaş ve üstü içindir.</p>'}}
 if(S.ageOk)odemeDonus();
 }

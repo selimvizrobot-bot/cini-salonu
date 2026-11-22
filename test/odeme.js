@@ -35,7 +35,7 @@ async function rest(u, init) {
   const [yol, qs] = u.pathname.replace('/rest/v1/', '').split('?').concat(u.search.slice(1)).slice(0, 2);
   const body = init.body ? JSON.parse(init.body) : null;
   if (init.headers.apikey !== SECRET || init.headers.Authorization) return H(401, { message: 'anahtar' });
-  if (yol === 'rpc/odeme_tamamla') { const r = await svc('select public.odeme_tamamla($1,$2) v', [body.p_id, body.p_payment_id]); return r.err ? H(400, { message: r.err }) : H(200, r.rows[0].v); }
+  if (yol.startsWith('rpc/')) { const k = Object.keys(body); const r = await svc(`select public.${yol.slice(4)}(${k.map((x, i) => `${x} => $${i + 1}`)}) v`, k.map(x => body[x])); return r.err ? H(400, { message: r.err }) : H(200, r.rows[0].v); }
   const w = [], p = [];
   for (const [k, v] of new URLSearchParams(qs)) {
     if (k === 'select') continue;
@@ -74,17 +74,41 @@ async function iyzicoSahte(u, init) {
   return H(404, {});
 }
 
+// ── Google sahtesi: hizmet hesabı JWT'si gerçek açık anahtarla doğrulanır ──
+const { publicKey: GPUB, privateKey: GPRIV } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+const SA = { client_email: 'cini@proje.iam.gserviceaccount.com', private_key: GPRIV.export({ type: 'pkcs8', format: 'pem' }) };
+ENV.GOOGLE_PLAY_SA = JSON.stringify(SA);
+const gp = { alimlar: {}, jwtHata: 0, tokenIstek: 0 };
+async function googleSahte(u, init) {
+  if (u.origin === 'https://oauth2.googleapis.com') {
+    gp.tokenIstek++;
+    const jwt = new URLSearchParams(init.body.toString()).get('assertion') || '';
+    const [h, c, sg] = jwt.split('.');
+    const dogru = crypto.verify('RSA-SHA256', Buffer.from(h + '.' + c), GPUB, Buffer.from(sg, 'base64url'));
+    const claim = JSON.parse(Buffer.from(c, 'base64url').toString());
+    if (!dogru || claim.iss !== SA.client_email || !/androidpublisher/.test(claim.scope)) { gp.jwtHata++; return H(400, { error: 'invalid_grant' }); }
+    return H(200, { access_token: 'ya29.sahte', expires_in: 3600 });
+  }
+  const m = u.pathname.match(/^\/androidpublisher\/v3\/applications\/([^/]+)\/purchases\/products\/([^/]+)\/tokens\/(.+)$/);
+  if (!m || init.headers.Authorization !== 'Bearer ya29.sahte') return H(401, {});
+  const a = gp.alimlar[decodeURIComponent(m[3])];
+  if (!a || a.sku !== decodeURIComponent(m[2]) || m[1] !== 'io.github.selimvizrobot.cinisalonu') return H(404, { error: { code: 404 } });
+  return H(200, { purchaseState: a.durum ?? 0, consumptionState: 0, orderId: a.siparis, purchaseType: 0 });
+}
+
 async function sahteFetch(adres, init = {}) {
   const u = new URL(adres); init.headers = init.headers || {};
   if (adres.startsWith(SB_URL + '/auth/v1/user')) { const t = (init.headers.Authorization || '').replace('Bearer ', ''); return JWT[t] ? H(200, JWT[t]) : H(401, { msg: 'jwt' }); }
   if (adres.startsWith(SB_URL + '/rest/v1/')) return rest(u, init);
   if (u.origin === 'https://sandbox-api.iyzipay.com') return iyzicoSahte(u, init);
+  if (u.origin === 'https://oauth2.googleapis.com' || u.origin === 'https://androidpublisher.googleapis.com') return googleSahte(u, init);
   throw new Error('beklenmeyen adres ' + adres);
 }
 
 let handler;
-new Function('Deno', 'fetch', fs.readFileSync(path.join(__dirname, '..', 'supabase', 'functions', 'odeme', 'index.ts'), 'utf8'))(
-  { env: { get: k => ENV[k] }, serve: h => { handler = h; } }, sahteFetch);
+let gErisimSifirla = () => {};
+new Function('Deno', 'fetch', '__kanca', fs.readFileSync(path.join(__dirname, '..', 'supabase', 'functions', 'odeme', 'index.ts'), 'utf8') + '\n__kanca(() => { gErisim = null; });')(
+  { env: { get: k => ENV[k] }, serve: h => { handler = h; } }, sahteFetch, f => { gErisimSifirla = f; });
 const cagir = async (o, jwt) => { const r = await handler(new Request('https://f/odeme', { method: 'POST', headers: { 'content-type': 'application/json', ...(jwt ? { authorization: 'Bearer ' + jwt } : {}), 'x-forwarded-for': '85.1.2.3, 10.0.0.1' }, body: JSON.stringify(o) })); return { s: r.status, j: await r.json(), h: r.headers }; };
 const donus = async token => { const r = await handler(new Request('https://f/odeme', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'token=' + encodeURIComponent(token) })); return { s: r.status, yer: r.headers.get('location') }; };
 const F = { ad: 'Selim', soyad: 'Yılmaz', tel: '0555 111 22 33', sehir: 'İstanbul', adres: 'Örnek Mah. 1. Sok. No 2' };
@@ -184,6 +208,33 @@ const sonId = () => iyz.init[iyz.init.length - 1].conversationId;
   b = await bil(ev, bimza(ev)); ok(b.s === 503 && (await cuzdan(A)) === wA + 100, 'iyzico "başarılı" der ama sorgu doğrulamazsa yükleme yok, yeniden deneme istenir');
   b = await bil({ iyziEventType: 'CHECKOUT_FORM_AUTH', token: 'tok-olmayan-1', status: 'SUCCESS', paymentConversationId: 'x', iyziPaymentId: 1 }); ok(b.s === 200 && (await cuzdan(A)) === wA + 100, 'Bilinmeyen tokenlı sahte bildirim etkisiz');
   b = await bil({ iyziEventType: 'SUBSCRIPTION_ORDER_SUCCESS', token: 'x' }); ok(b.s === 200, 'İlgisiz olay türü sessizce geçiliyor');
+
+  console.log('Google Play (Android)');
+  const T1 = 'play-token-' + 'a'.repeat(30), T2 = 'play-token-' + 'b'.repeat(30), T3 = 'play-token-' + 'c'.repeat(30);
+  gp.alimlar[T1] = { sku: 'e150', siparis: 'GPA.1111-2222-3333-44444' };
+  gp.alimlar[T2] = { sku: 'e50', siparis: 'GPA.5555', durum: 2 };
+  gp.alimlar[T3] = { sku: 'e400', siparis: 'GPA.7777' };
+  c = await cagir({ islem: 'play_on', paket: 'e150' }, 'eyJ.A'); ok(c.s === 200 && c.j.ok && c.j.elmas === 150, 'Alım öncesi denetim geçti (profil + sınır)');
+  c = await cagir({ islem: 'play_on', paket: 'e150' }, 'eyJ.B'); ok(c.s === 400 && /profilin/.test(c.j.hata), 'Profilsize Play alımı açılmıyor');
+  wA = await cuzdan(A);
+  c = await cagir({ islem: 'play_dogrula', paket: 'e150', token: T1 }, 'eyJ.A');
+  ok(c.s === 200 && c.j.ok && c.j.eklenen === 150 && (await cuzdan(A)) === wA + 150 && gp.jwtHata === 0, `Google'dan doğrulandı, 150 elmas yüklendi; hizmet hesabı imzası geçerli (${wA} → ${await cuzdan(A)})`);
+  const pr = (await pool.query(`select kaynak, durum, tutar, iyzico_payment_id from public.odemeler where token = $1`, [T1])).rows[0];
+  const pl = (await pool.query(`select ref from public.elmas_ledger where ref like 'play:%'`)).rows;
+  ok(pr.kaynak === 'play' && pr.durum === 'odendi' && pr.tutar === '79.99' && pl.length === 1 && pl[0].ref === 'play:GPA.1111-2222-3333-44444', 'Kayıt: kaynak play, sipariş no dökümde');
+  c = await cagir({ islem: 'play_dogrula', paket: 'e150', token: T1 }, 'eyJ.A'); ok(c.j.ok && c.j.durum === 'zaten' && (await cuzdan(A)) === wA + 150, 'Aynı satın alma tekrar gelse de bir kez yüklendi');
+  c = await cagir({ islem: 'play_dogrula', paket: 'e150', token: T1 }, 'eyJ.B'); ok(c.s === 400 && /başka bir hesaba/.test(c.j.hata), 'Başkasının satın alma jetonu kullanılamıyor');
+  c = await cagir({ islem: 'play_dogrula', paket: 'e400', token: T1 }, 'eyJ.A'); ok(c.s === 400 && /bulunamadı/.test(c.j.hata), 'Paket uyuşmayan jeton reddedildi');
+  c = await cagir({ islem: 'play_dogrula', paket: 'e50', token: T2 }, 'eyJ.A'); ok(c.s === 202 && c.j.bekliyor && (await cuzdan(A)) === wA + 150, 'Bekleyen (onaylanmamış) ödeme yüklenmedi');
+  c = await cagir({ islem: 'play_dogrula', paket: 'e50', token: 'play-token-' + 'z'.repeat(30) }, 'eyJ.A'); ok(c.s === 400 && (await cuzdan(A)) === wA + 150, 'Uydurma jeton reddedildi');
+  await pool.query(`insert into public.harcama_siniri (user_id, aylik) values ($1, 0) on conflict (user_id) do update set aylik = 0`, [A]);
+  c = await cagir({ islem: 'play_on', paket: 'e400' }, 'eyJ.A'); ok(c.s === 400 && /sınırını aşıyor/.test(c.j.hata), 'Aylık sınır Play alımını da baştan durduruyor');
+  c = await cagir({ islem: 'play_dogrula', paket: 'e400', token: T3 }, 'eyJ.A'); ok(c.j.ok && (await cuzdan(A)) === wA + 550, 'Google zaten tahsil ettiyse sınır olsa da elmas yüklenir (para alınıp elmas verilmemesi olmaz)');
+  await pool.query(`delete from public.harcama_siniri where user_id = $1`, [A]);
+  ok(gp.tokenIstek === 1, 'Google erişim anahtarı önbellekte (tek istek)');
+  const saY = ENV.GOOGLE_PLAY_SA; delete ENV.GOOGLE_PLAY_SA; gErisimSifirla();
+  c = await cagir({ islem: 'play_dogrula', paket: 'e50', token: T3 }, 'eyJ.A'); ok(c.s === 503 && /ayarlanmadı/.test(c.j.hata), 'Hizmet hesabı yoksa açık mesaj: ' + c.j.hata);
+  ENV.GOOGLE_PLAY_SA = saY;
 
   console.log('Harcama sınırı');
   const C = 'cccccccc-0000-0000-0000-00000000000c';

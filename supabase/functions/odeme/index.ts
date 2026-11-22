@@ -5,9 +5,12 @@
 //  POST JSON {islem:'baslat', paket, fatura} kullanıcı jetonuyla → {url} (iyzico ödeme sayfası)
 //  POST JSON {islem:'kontrol'}               kullanıcı jetonuyla → yarım kalan ödemeleri yeniden sorgula → {eklenen}
 //  POST JSON {iyziEventType,...}            iyzico bildirimi (webhook): ödemeyi iyzico'dan sorgulayıp sonuçlandır
+//  POST JSON {islem:'play_on', paket}       Android: Google Play alımından önce profil ve aylık sınır denetimi
+//  POST JSON {islem:'play_dogrula', paket, token}  Android: satın almayı Google Play'den doğrula, elması bir kez yükle
 //
 // Sırlar (Dashboard → Edge Functions → Secrets): IYZICO_API_KEY, IYZICO_SECRET_KEY
 // İsteğe bağlı: IYZICO_BASE_URL (varsayılan sandbox), SITE_URL, ODEME_DONUS_URL
+// Android: GOOGLE_PLAY_SA (Play Console'a bağlı hizmet hesabının JSON anahtarı), isteğe bağlı PLAY_PAKET
 
 const env = (k, d = '') => Deno.env.get(k) || d;
 const IYZICO = () => env('IYZICO_BASE_URL', 'https://sandbox-api.iyzipay.com');
@@ -154,6 +157,50 @@ async function bildirim(req, g) {
   return json({ ok: true, durum: s });
 }
 
+// ── Google Play (Android uygulaması) ──
+const PLAY_PAKET = () => env('PLAY_PAKET', 'io.github.selimvizrobot.cinisalonu');
+const b64u = v => btoa(typeof v === 'string' ? v : String.fromCharCode(...v)).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+let gErisim = null;
+async function googleErisim() {
+  if (gErisim && gErisim.son > Date.now() + 60000) return gErisim.t;
+  let sa = null; try { sa = JSON.parse(env('GOOGLE_PLAY_SA') || 'null'); } catch (_) { /* hatalı JSON */ }
+  if (!sa || !sa.client_email || !sa.private_key) { const e = new Error('GOOGLE_PLAY_SA yok'); e.kullanici = 'Google Play doğrulaması henüz ayarlanmadı.'; throw e; }
+  const simdi = Math.floor(Date.now() / 1000);
+  const ust = b64u(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const ic = b64u(JSON.stringify({ iss: sa.client_email, scope: 'https://www.googleapis.com/auth/androidpublisher', aud: 'https://oauth2.googleapis.com/token', iat: simdi, exp: simdi + 3600 }));
+  const der = Uint8Array.from(atob(sa.private_key.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '')), c => c.charCodeAt(0));
+  const k = await crypto.subtle.importKey('pkcs8', der, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
+  const imza = new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5', k, enc.encode(ust + '.' + ic)));
+  const r = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: ust + '.' + ic + '.' + b64u(imza) }) });
+  const j = await r.json();
+  if (!j.access_token) throw new Error('google erişim: ' + JSON.stringify(j).slice(0, 200));
+  gErisim = { t: j.access_token, son: Date.now() + (j.expires_in || 3600) * 1000 };
+  return j.access_token;
+}
+async function playOnKontrol(u, g) {
+  try { return json(await db('rpc/play_on_kontrol', { method: 'POST', body: JSON.stringify({ p_user: u.id, p_paket: String(g.paket || '') }) })); }
+  catch (e) { return json({ hata: e.kullanici || 'Satın alma başlatılamadı.' }, 400); }
+}
+async function playDogrula(u, g) {
+  const paket = String(g.paket || ''), token = String(g.token || '');
+  if (!/^e\d{1,4}$/.test(paket) || token.length < 20 || token.length > 4000) return json({ hata: 'Satın alma bilgisi eksik.' }, 400);
+  let p;
+  try {
+    const at = await googleErisim();
+    const r = await fetch('https://androidpublisher.googleapis.com/androidpublisher/v3/applications/' + PLAY_PAKET() + '/purchases/products/'
+      + encodeURIComponent(paket) + '/tokens/' + encodeURIComponent(token), { headers: { Authorization: 'Bearer ' + at } });
+    p = await r.json();
+    if (!r.ok) return json({ hata: "Satın alma Google Play'de bulunamadı." }, 400);
+  } catch (e) { console.error(e); return json({ hata: e.kullanici || "Google Play'e ulaşılamadı, birazdan tekrar dene." }, 503); }
+  if (p.purchaseState === 2) return json({ bekliyor: true, hata: 'Ödemen henüz onaylanmadı; onaylanınca elmasın yüklenir.' }, 202);
+  if (p.purchaseState !== 0) return json({ hata: 'Bu satın alma iptal edilmiş.' }, 400);
+  try {
+    const r = await db('rpc/play_tamamla', { method: 'POST', body: JSON.stringify({ p_user: u.id, p_paket: paket, p_token: token, p_siparis: p.orderId || '' }) });
+    return json({ ok: true, durum: r.durum, eklenen: r.elmas });
+  } catch (e) { return json({ hata: e.kullanici || 'Elmas yüklenemedi.' }, 400); }
+}
+
 async function kontrol(u) {
   const once = new Date(Date.now() - 7 * 864e5).toISOString();
   const rows = (await db('odemeler?select=*&user_id=eq.' + u.id + '&durum=in.(bekliyor,inceleme)&created_at=gte.' + encodeURIComponent(once))) || [];
@@ -178,6 +225,8 @@ Deno.serve(async req => {
     if (!u) return json({ hata: 'Giriş yapmalısın.' }, 401);
     if (g.islem === 'baslat') return await baslat(req, u, g);
     if (g.islem === 'kontrol') return await kontrol(u);
+    if (g.islem === 'play_on') return await playOnKontrol(u, g);
+    if (g.islem === 'play_dogrula') return await playDogrula(u, g);
     return json({ hata: 'Bilinmeyen işlem.' }, 400);
   } catch (e) {
     console.error(e);
