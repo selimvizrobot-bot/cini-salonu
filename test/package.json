@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node e2e.js && node okey.js && node odeme.js"
   },
   "keywords": [],
   "author": "",
@@ -12,5 +12,8 @@
   "dependencies": {
     "jsdom": "^24.1.3",
     "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "iyzipay": "^2.0.71"
   }
 }

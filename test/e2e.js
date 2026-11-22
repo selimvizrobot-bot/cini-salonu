@@ -1,6 +1,7 @@
 // Uçtan uca test: gerçek sayfa (jsdom) + gerçek şema (yerel Postgres, RLS açık).
 // supabase-js yerine, aynı çağrıları SQL'e çeviren küçük bir sahte istemci kullanılır.
 const fs = require('fs'), path = require('path'), { JSDOM } = require('jsdom'), { Pool } = require('pg');
+require('child_process').execSync(path.join(__dirname, 'kur.sh') + ' e2e', { stdio: 'ignore' });
 const pool = new Pool({ host: '/tmp', port: 5499, user: 'postgres', database: 'e2e' });
 const HTML = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8')
   .replace(/window\.CINI_CONFIG=\{[^}]*\}/, "window.CINI_CONFIG={url:'http://yerel',key:'test'}");
@@ -24,12 +25,14 @@ function makeClient() {
   class Q {
     constructor(t) { this.t = t; this.op = 'select'; this.w = []; this.p = []; this.ret = false; this.one = null; this.tail = ''; }
     $(v) { this.p.push(v); return '$' + this.p.length; }
-    select() { if (this.op !== 'select') this.ret = true; return this; }
+    select(c) { if (this.op !== 'select') this.ret = true; else if (c) this.cols = c; return this; }
     insert(v) { this.op = 'insert'; this.v = v; return this; }
     update(v) { this.op = 'update'; this.v = v; return this; }
     delete() { this.op = 'delete'; return this; }
     eq(k, v) { this.w.push(`${k} = ${this.$(v)}`); return this; }
     is(k) { this.w.push(`${k} is null`); return this; }
+    in(k, v) { this.w.push(`${k} = any(${this.$(v)})`); return this; }
+    gte(k, v) { this.w.push(`${k} >= ${this.$(v)}`); return this; }
     or(s) { const g = [...s.matchAll(/and\(([^)]*)\)/g)].map(m => '(' + m[1].split(',').map(x => { const [k, , v] = x.split('.'); return `${k} = ${this.$(v)}`; }).join(' and ') + ')'); this.w.push('(' + g.join(' or ') + ')'); return this; }
     order(k, o) { this.tail += ` order by ${k} ${o && o.ascending === false ? 'desc' : 'asc'}`; return this; }
     limit(n) { this.tail += ` limit ${+n}`; return this; }
@@ -38,7 +41,7 @@ function makeClient() {
     async run() {
       const where = this.w.length ? ' where ' + this.w.join(' and ') : '', t = 'public.' + this.t;
       let sql;
-      if (this.op === 'select') sql = `select * from ${t}${where}${this.tail}`;
+      if (this.op === 'select') sql = `select ${this.cols || '*'} from ${t}${where}${this.tail}`;
       if (this.op === 'insert') { const k = Object.keys(this.v); sql = `insert into ${t} (${k.join(',')}) values (${k.map(x => this.$(this.v[x])).join(',')})` + (this.ret ? ' returning *' : ''); }
       if (this.op === 'update') { const k = Object.keys(this.v); sql = `update ${t} set ${k.map(x => `${x} = ${this.$(this.v[x])}`).join(',')}${where}` + (this.ret ? ' returning *' : ''); }
       if (this.op === 'delete') sql = `delete from ${t}${where}`;
@@ -48,7 +51,9 @@ function makeClient() {
       return r;
     }
   }
+  const fx = { calls: [], yanit: async () => ({ data: { url: 'https://sandbox-cpp.iyzipay.com?token=t1' }, error: null }) };
   const sb = {
+    functions: { invoke: async (n, o) => { fx.calls.push({ n, body: o.body }); return fx.yanit(o.body); } },
     from: t => new Q(t),
     rpc: async (fn, a = {}) => {
       if (fn === 'discover') return asUser(uid, 'select * from public.discover($1)', [a.p_limit]);
@@ -64,15 +69,15 @@ function makeClient() {
       async signOut() { uid = null; cb('SIGNED_OUT', null); return { error: null }; },
     },
   };
-  return { createClient: () => sb, uid: () => uid };
+  return { createClient: () => sb, uid: () => uid, fx };
 }
 
-function open() {
-  const mock = makeClient();
-  const dom = new JSDOM(HTML, { url: 'http://localhost/', runScripts: 'dangerously', pretendToBeVisual: true,
-    beforeParse(w) { w.matchMedia = () => ({ matches: true }); w.supabase = mock; } });
+function open(hash = '') {
+  const mock = makeClient(), gidilen = [];
+  const dom = new JSDOM(HTML, { url: 'http://localhost/' + hash, runScripts: 'dangerously', pretendToBeVisual: true,
+    beforeParse(w) { w.matchMedia = () => ({ matches: true }); w.supabase = mock; w.CiniGit = u => gidilen.push(u); } });
   const w = dom.window, d = w.document, q = s => d.querySelector(s);
-  return { w, d, q, mock,
+  return { w, d, q, mock, gidilen,
     click: s => { const e = typeof s === 'string' ? q(s) : s; if (!e) throw new Error('yok: ' + s); e.click(); },
     fill: (s, v) => { const e = q(s); e.value = v; },
     text: s => (q(s) || {}).textContent || '',
@@ -185,6 +190,37 @@ async function signup(P, email, prof) {
   ok(/Henüz arkadaşın yok/.test(A.text('#sbody')), 'Engelden sonra arkadaşlık silindi');
   const r = await pool.query("select count(*)::int n from public.messages where body like 'Merhaba%'");
   ok(r.rows[0].n === 1, 'Veritabanında yalnız geçerli mesaj var');
+
+  console.log('Elmas satın alma (iyzico)');
+  const fx = A.mock.fx, sub = () => A.q('#fBuy').dispatchEvent(new A.w.Event('submit', { cancelable: true }));
+  A.click('#bShop'); await sleep(30);
+  ok(A.d.querySelectorAll('#mBox [data-pk]').length === 3 && !/Kese|Sandık|Hazine/.test(A.text('#mBox')), 'Mağazada 3 elmas paketi var, jeton satılmıyor');
+  A.click('#mBox [data-pk="e150"]'); await sleep(30);
+  ok(!!A.q('#fBuy') && /150 elmas · 79,99/.test(A.text('#mBox h2')), 'Paket seçilince fatura formu açıldı');
+  A.fill('#bAd', 'Selim'); A.fill('#bSoyad', 'Yumlu'); A.fill('#bTel', '123'); sub(); await sleep(20);
+  ok(/Cep telefonunu/.test(A.text('#bE')) && fx.calls.length === 0, 'Hatalı telefon: ' + A.text('#bE'));
+  A.fill('#bTel', '0555 111 22 33'); A.fill('#bSehir', 'İstanbul'); A.fill('#bAdres', 'Örnek Mah. 1. Sok. No 2'); sub(); await sleep(20);
+  ok(/onayı işaretle/.test(A.text('#bE')) && fx.calls.length === 0, 'Onaysız ödeme başlamadı');
+  fx.yanit = async () => ({ data: null, error: { context: { json: async () => ({ hata: 'Ödeme altyapısı henüz ayarlanmadı.' }) } } });
+  A.q('#bOk').checked = true; A.q('#bCay').checked = true; A.q('#bHat').checked = true; sub(); await sleep(50);
+  ok(/ayarlanmadı/.test(A.text('#bE')) && !A.q('#bGo').disabled && A.gidilen.length === 0, 'Sunucu hatası kullanıcıya gösterildi: ' + A.text('#bE'));
+  fx.yanit = async () => ({ data: { url: 'https://sandbox-cpp.iyzipay.com?token=t1' }, error: null });
+  sub(); await sleep(50);
+  const cg = fx.calls[fx.calls.length - 1];
+  ok(cg.n === 'odeme' && cg.body.islem === 'baslat' && cg.body.paket === 'e150' && cg.body.fatura.tel === '0555 111 22 33' && cg.body.fatura.sehir === 'İstanbul', 'Fonksiyon doğru paket ve fatura bilgisiyle çağrıldı');
+  ok(A.gidilen[0] === 'https://sandbox-cpp.iyzipay.com?token=t1', 'iyzico ödeme sayfasına yönlendirildi');
+  ok(JSON.parse(A.w.localStorage.getItem('cini-fatura')).ad === 'Selim', 'Fatura bilgisi cihazda hatırlandı');
+  const R = open('#odeme-ok'); await sleep(50); R.click('#aYes'); await sleep(20);
+  ok(/Ödeme alındı/.test(R.text('#mBox')) && R.w.location.hash === '', 'Dönüşte "Ödeme alındı" gösterildi, adres temizlendi');
+  const H2 = open('#odeme-hata'); await sleep(50); ok(/18 yaşından/.test(H2.text('#mBox')), 'Yaş sorusu ödeme mesajından önce geldi'); H2.click('#aYes'); await sleep(20); ok(/tamamlanmadı/.test(H2.text('#mBox')), 'Başarısız dönüş mesajı');
+  const aId = A.mock.uid(), e0 = +A.text('#elmasN');
+  const [od] = (await pool.query(`set role service_role; insert into public.odemeler (user_id,paket) values ('${aId}','e150') returning id; reset role`))[1].rows;
+  fx.yanit = async () => { await pool.query('select public.odeme_tamamla($1,$2)', [od.id, 'PAYX']); return { data: { eklenen: 150 }, error: null }; };
+await A.w.CiniOdemeTest.kontrol(); await sleep(80);
+  ok(fx.calls[fx.calls.length - 1].body.islem === 'kontrol' && /\+150 elmas/.test(A.text('#toast')) && +A.text('#elmasN') === e0 + 150, `Yarım kalan ödeme kontrol edilip yüklendi (${e0} → ${A.text('#elmasN')})`);
+  const nC = fx.calls.length; await A.w.CiniOdemeTest.kontrol(); await sleep(30);
+  ok(fx.calls.length === nC, 'Bekleyen ödeme yoksa sunucu çağrılmadı');
+  A.click(A.btn('Kapat') || '#modal'); await sleep(20);
 
   console.log('KVKK silme');
   B.tab('sosyal'); B.click(B.btn('Profilim')); await sleep(100);

@@ -235,7 +235,7 @@ h4{font:700 16px Rubik,sans-serif;color:var(--gold2);margin:18px 0 10px}
   </aside>
 </main>
 
-<footer>Sosyal casino prototipi · 18+ · Sanal jetonların gerçek para değeri yoktur; nakde, kriptoya ya da ödüle çevrilemez. Oyun masalarına giriş 1 elmas, bilet 1 saat geçerlidir. Tanış bölümünde yalnız gerçek oyuncular vardır; özel mesaj karşılıklı arkadaşlıkla açılır ve her mesaj 1 elmastır. Elmas oyunda kazanılmaz, oyuncular arasında aktarılamaz; hediyeler elmasa ya da jetona dönüşmez. Mola hatırlatıcısı ve günlük süre sınırı Ayarlar'dadır.</footer>
+<footer>Sosyal casino prototipi · 18+ · Sanal jetonların gerçek para değeri yoktur; nakde, kriptoya ya da ödüle çevrilemez. Oyun masalarına giriş 1 elmas, bilet 1 saat geçerlidir. Tanış bölümünde yalnız gerçek oyuncular vardır; özel mesaj karşılıklı arkadaşlıkla açılır ve her mesaj 1 elmastır. Elmas oyunda kazanılmaz, oyuncular arasında aktarılamaz; hediyeler elmasa ya da jetona dönüşmez. Mola hatırlatıcısı ve günlük süre sınırı Ayarlar'dadır. Elmas ödemeleri iyzico ile alınır · <a href="yasal.html">Satış koşulları, iade ve KVKK</a></footer>
 
 <div class="modal" id="modal" hidden><div class="box" id="mBox" role="dialog" aria-modal="true"></div></div>
 <div id="toast" role="status"></div>
@@ -286,12 +286,43 @@ function wheelModal(){const n=WH.length,seg=360/n,rad=a=>a*Math.PI/180,ready=whe
 modal(`<h2>Günlük çark</h2><p>4 saatte bir ücretsiz çevir.</p><div class="wheel"><svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="99" fill="#a8761e"/><g id="wG">${parts}</g><circle cx="100" cy="100" r="15" fill="#e8b64a" stroke="#fff1c2" stroke-width="2"/><polygon points="91,0 109,0 100,20" fill="#fff1c2" stroke="#3a0a16" stroke-width="1.5"/></svg></div><div class="row"><button class="big" id="wGo" ${ready?'':'disabled'}>${ready?'ÇEVİR':'Sonraki: '+left(S.lastWheel+WH_CD)}</button><button class="ghost" data-close id="wClose">Kapat</button></div>`);
 $('#wGo').onclick=()=>{if(!wheelReady())return;const k=Math.floor(Math.random()*n),R=5*360+(360-k*seg)%360,g=$('#wG');S.lastWheel=Date.now();save();$('#wGo').disabled=true;$('#wClose').disabled=true;g.style.transition=RM?'none':'transform 4s cubic-bezier(.17,.67,.2,1)';g.style.transform=`rotate(${R}deg)`;setTimeout(()=>{S.coins+=WH[k];$('#wGo').textContent='+'+fmt(WH[k])+' jeton';$('#wClose').disabled=false;toast(`Çarktan +${fmt(WH[k])} jeton`);hud()},RM?50:4100)}}
 
-/* mağaza (prototip) */
-function shopModal(){const P=[['Kese',20000,'49,99 ₺'],['Sandık',60000,'129,99 ₺'],['Hazine',150000,'279,99 ₺']],E=[[50,'29,99 ₺'],[150,'79,99 ₺'],[400,'179,99 ₺']];
-  modal(`<h2>Mağaza</h2><p>Örnek fiyatlar. Ödeme altyapısı henüz bağlı değil.</p>
-  <h4>Elmas · masa bileti, özel mesaj ve hediye için</h4><div class="packs">${E.map(e=>`<div class="pack"><b><svg class="gem" viewBox="0 0 100 100" aria-hidden="true"><use href="#s-elmas"/></svg> ${fmt(e[0])} elmas</b><button disabled>${e[1]}</button><span>Masa bileti 1 (1 saat) · mesaj 1 · oyunda kazanılmaz, aktarılamaz</span></div>`).join('')}</div>
-  <h4>Jeton · oyunlar için</h4><div class="packs">${P.map(p=>`<div class="pack"><b>${p[0]} · ${fmt(p[1])} jeton</b><button disabled>${p[2]}</button><span>Paraya çevrilemez</span></div>`).join('')}</div>
-  <p>Canlı sürümde: aylık harcama sınırı ve harcama geçmişi.</p><div class="row"><button data-close>Kapat</button></div>`)}
+/* mağaza · elmas iyzico ile */
+const PK={e50:[50,'29,99 ₺'],e150:[150,'79,99 ₺'],e400:[400,'179,99 ₺']};
+function shopModal(){
+  modal(`<h2>Mağaza</h2><h4>Elmas · masa bileti, özel mesaj ve hediye için</h4><div class="packs">${Object.entries(PK).map(([k,e])=>`<div class="pack"><b><svg class="gem" viewBox="0 0 100 100" aria-hidden="true"><use href="#s-elmas"/></svg> ${fmt(e[0])} elmas</b><button data-pk="${k}">${e[1]}</button><span>Masa bileti 1 (1 saat) · mesaj 1 · oyunda kazanılmaz, aktarılamaz, paraya çevrilmez</span></div>`).join('')}</div>
+  <p>Jeton satılmaz; çarktan ve saatlik dolumdan ücretsiz gelir.</p><p>Ödeme iyzico'nun güvenli sayfasında alınır, kart bilgin bize gelmez. <a href="yasal.html" target="_blank" rel="noopener">Satış koşulları ve iade</a></p><div class="row"><button data-close>Kapat</button></div>`);
+  document.querySelectorAll('#mBox [data-pk]').forEach(b=>b.onclick=()=>buyModal(b.dataset.pk))}
+function girisIste(t){modal(`<h2>${t}</h2><p>Elmas almak için hesabın ve profilin olmalı. Yeni hesaplara 20 elmas hediye.</p><div class="row"><button class="big" id="goSoc">Giriş / kayıt</button><button class="ghost" data-close>Kapat</button></div>`);$('#goSoc').onclick=()=>{closeM();document.querySelector('.tabs button[data-t=sosyal]').click()}}
+function buyModal(k){const p=PK[k];if(!p)return;
+  if(!CFG.url||!CFG.key){toast('Ödeme bu sürümde kapalı.');return}
+  if(!sb){toast('Sunucuya bağlanılıyor, birazdan tekrar dene.');return}
+  if(!me||!myP){girisIste('Elmas almak için giriş yap');return}
+  let f={};try{f=JSON.parse(localStorage.getItem('cini-fatura')||'{}')}catch(_){}
+  const i=(id,lab,v,a)=>`<label class="f">${lab}<input id="${id}" value="${esc(v)}" ${a}></label>`;
+  modal(`<h2>${fmt(p[0])} elmas · ${p[1]}</h2><p>Fatura bilgilerin iyzico'ya iletilir; kart bilgisini iyzico sayfasında gireceksin.</p><form id="fBuy" novalidate>
+  ${i('bAd','Ad',f.ad,'maxlength="50" autocomplete="given-name"')}${i('bSoyad','Soyad',f.soyad,'maxlength="50" autocomplete="family-name"')}${i('bTel','Cep telefonu',f.tel,'type="tel" inputmode="tel" placeholder="05xx xxx xx xx" autocomplete="tel"')}${i('bSehir','Şehir',f.sehir,'maxlength="50" autocomplete="address-level2"')}${i('bAdres','Fatura adresi',f.adres,'maxlength="200" autocomplete="street-address"')}
+  <label class="chk"><input type="checkbox" id="bOk"> <span><a href="yasal.html#on-bilgi" target="_blank" rel="noopener">Ön bilgilendirme formunu</a> ve <a href="yasal.html#sozlesme" target="_blank" rel="noopener">mesafeli satış sözleşmesini</a> okudum, onaylıyorum.</span></label>
+  <label class="chk"><input type="checkbox" id="bCay"> <span>Elmaslar ödeme onaylanınca hemen hesabıma yüklenir; bu yüzden cayma hakkım olmadığını kabul ediyorum.</span></label>
+  <label class="chk"><input type="checkbox" id="bHat" ${f.ad?'checked':''}> <span>Fatura bilgilerimi bu cihazda hatırla</span></label>
+  <div class="row"><button class="big" id="bGo">iyzico ile öde</button><button type="button" class="ghost" data-close>Vazgeç</button></div><p class="err" id="bE" role="alert"></p></form>`);
+  $('#fBuy').onsubmit=async e=>{e.preventDefault();const g=s=>$(s).value.trim(),E=t=>{$('#bE').textContent=t},b=$('#bGo');
+    const v={ad:g('#bAd'),soyad:g('#bSoyad'),tel:g('#bTel'),sehir:g('#bSehir'),adres:g('#bAdres')};
+    if(v.ad.length<2||v.soyad.length<2)return E('Adını ve soyadını yaz.');
+    if(!/^5\d{9}$/.test(v.tel.replace(/\D/g,'').replace(/^90/,'').replace(/^0/,'')))return E('Cep telefonunu 05xx xxx xx xx biçiminde yaz.');
+    if(v.sehir.length<2||v.adres.length<5)return E('Şehir ve fatura adresini yaz.');
+    if(!$('#bOk').checked||!$('#bCay').checked)return E('Devam etmek için ilk iki onayı işaretle.');
+    try{$('#bHat').checked?localStorage.setItem('cini-fatura',JSON.stringify(v)):localStorage.removeItem('cini-fatura')}catch(_){}
+    b.disabled=true;b.textContent='Ödeme sayfası açılıyor…';E('');
+    const r=await odemeCagir({islem:'baslat',paket:k,fatura:v});
+    if(r.url){odemeGit(r.url);return}
+    b.disabled=false;b.textContent='iyzico ile öde';E(r.hata||'Ödeme başlatılamadı.')}}
+async function odemeCagir(body){try{const {data,error}=await sb.functions.invoke('odeme',{body});if(!error)return data||{};try{return await error.context.json()}catch(_){return {hata:'Sunucuya ulaşılamadı.'}}}catch(_){return {hata:'Bağlantı hatası.'}}}
+const odemeGit=u=>(window.CiniGit||(x=>location.assign(x)))(u);
+function odemeDonus(){const m=/^#odeme-(ok|inceleme|hata)$/.exec(location.hash);if(!m)return;try{history.replaceState(null,'',location.pathname+location.search)}catch(_){}
+  const T={ok:['Ödeme alındı','Elmasların hesabına yüklendi. İyi oyunlar!'],inceleme:['Ödemen kontrol ediliyor','iyzico onaylayınca elmasların kendiliğinden yüklenir.'],hata:['Ödeme tamamlanmadı','Kartından ücret alınmadıysa yeniden deneyebilirsin. Ücret alındıysa sayfayı yenile; ödeme kontrol edilip elmasların yüklenir.']}[m[1]];
+  modal(`<h2>${T[0]}</h2><p>${T[1]}</p><div class="row"><button class="big" data-close>Tamam</button></div>`)}
+async function odemeKontrol(){if(!sb||!me||!myP)return;const {data}=await sb.from('odemeler').select('id').in('durum',['bekliyor','inceleme']).gte('created_at',new Date(Date.now()-7*864e5).toISOString()).limit(1);
+  if(!data||!data.length)return;const r=await odemeCagir({islem:'kontrol'});if(r.eklenen>0){toast(`Ödemen onaylandı: +${fmt(r.eklenen)} elmas`);loadWallet()}}
 
 /* ayarlar */
 function setModal(){const o=(v,arr,lab)=>arr.map(a=>`<option value="${a}" ${+v===a?'selected':''}>${a?a+' dk':lab}</option>`).join('');modal(`<h2>Ayarlar</h2><label class="f">Mola hatırlatıcısı<select id="fRem">${o(S.remind,[0,15,30,60],'Kapalı')}</select></label><label class="f">Günlük oyun süresi sınırı<select id="fLim">${o(S.limit,[0,30,60,120,180],'Sınır yok')}</select></label><p>Bugün oynadığın süre: ${Math.round(S.playedToday/60000)} dk</p><div class="row"><button id="fBreak">Şimdi 15 dk mola</button><button data-close>Kapat</button></div>`);$('#fRem').onchange=e=>{S.remind=+e.target.value;save()};$('#fLim').onchange=e=>{S.limit=+e.target.value;save()};$('#fBreak').onclick=()=>{S.lockUntil=Date.now()+15*60000;save();closeM();toast('Mola başladı.')}}
@@ -366,7 +397,7 @@ async function socInit(){renderSoc();joinRoom();if(!CFG.url||!CFG.key)return;
   if(!window.supabase){renderSoc('Sunucu kütüphanesi yüklenemedi. İnternet bağlantını kontrol et.');return}
   sb=window.supabase.createClient(CFG.url,CFG.key);
   sb.auth.onAuthStateChange((ev,s)=>{const u=s?.user?.id||null;if(u!==me||ev==='INITIAL_SESSION'){me=u;setTimeout(afterAuth,0)}})}
-async function afterAuth(){myP=null;elmas=null;if(me){const {data}=await sb.from('profiles').select('*').eq('id',me).maybeSingle();myP=data||null}subDM();renderSoc();joinRoom();loadPasses();if(me&&myP)loadWallet()}
+async function afterAuth(){myP=null;elmas=null;if(me){const {data}=await sb.from('profiles').select('*').eq('id',me).maybeSingle();myP=data||null}subDM();renderSoc();joinRoom();loadPasses();if(me&&myP){loadWallet();odemeKontrol()}}
 
 function renderSoc(note){const el=$('#soc');
   if(!sb){el.innerHTML=`<div class="sbox"><h3>Sunucu bağlı değil</h3><p>${esc(note||'Tanış bölümü yalnız gerçek oyuncularla çalışır; sahte profil ya da bot yoktur. Sunucu bağlanınca giriş, profil, arkadaşlık ve mesajlaşma burada açılır.')}</p></div>`;return}
@@ -549,8 +580,9 @@ document.addEventListener('keydown',e=>{if(e.code!=='Space'||!$('#modal').hidden
 
 /* başlangıç */
 dayCheck();S.sb=Math.min(S.sb,maxBetIdx());S.pb=Math.min(S.pb,maxBetIdx());S.ob=Math.min(S.ob,maxBetIdx());oRender();
-renderHand();renderBets();hud();setInterval(()=>{dayCheck();hud();renderPassInfo()},30000);socInit();renderPassInfo();
-if(!S.ageOk){modal(`<h2>18 yaşından büyük müsün?</h2><p>Çini Salonu bir sosyal casino oyunudur. Jetonların gerçek para değeri yoktur; nakde, kriptoya ya da ödüle çevrilemez.</p><div class="row"><button class="big" id="aYes">Evet, 18+</button><button class="ghost" id="aNo">Hayır</button></div>`,false);$('#aYes').onclick=()=>{S.ageOk=true;save();closeM();toast('Hoş geldin! 10.000 jetonla başlıyorsun.')};$('#aNo').onclick=()=>{$('#mBox').innerHTML='<h2>Üzgünüz</h2><p>Bu oyun yalnızca 18 yaş ve üstü içindir.</p>'}}
+renderHand();renderBets();hud();setInterval(()=>{dayCheck();hud();renderPassInfo()},30000);socInit();renderPassInfo();window.CiniOdemeTest={kontrol:odemeKontrol};
+if(!S.ageOk){modal(`<h2>18 yaşından büyük müsün?</h2><p>Çini Salonu bir sosyal casino oyunudur. Jetonların gerçek para değeri yoktur; nakde, kriptoya ya da ödüle çevrilemez.</p><div class="row"><button class="big" id="aYes">Evet, 18+</button><button class="ghost" id="aNo">Hayır</button></div>`,false);$('#aYes').onclick=()=>{S.ageOk=true;save();closeM();toast('Hoş geldin! 10.000 jetonla başlıyorsun.');odemeDonus()};$('#aNo').onclick=()=>{$('#mBox').innerHTML='<h2>Üzgünüz</h2><p>Bu oyun yalnızca 18 yaş ve üstü içindir.</p>'}}
+if(S.ageOk)odemeDonus();
 }
 </script>
 </body>
