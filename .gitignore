@@ -1,2 +1,11 @@
 node_modules/
 package-lock.json
+
+# Android imza anahtarı asla git'e girmez
+android/*.keystore
+android/*.jks
+android/cikti/
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties

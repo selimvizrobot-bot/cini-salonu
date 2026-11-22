@@ -11,7 +11,7 @@ Sosyal casino (sanal jeton, paraya çevrilemez) + gerçek oyuncular arasında g�
 - `supabase/005_sinir.sql` — aylık harcama sınırı: en fazla 1000 ₺/ay; düşürme hemen, yükseltme 24 saat sonra
 - `supabase/006_yonetim.sql` — yönetim: şikâyet kararları, yasaklama, elmas düzeltme, ödeme listesi; her işlem `yonetim_kayit`'a yazılır
 - `supabase/007_play.sql` — Google Play ödemeleri: alım öncesi sınır denetimi, token başına tek yükleme (`kaynak = 'play'`)
-- `android/` — Google Play için TWA uygulaması (Bubblewrap; Google Play ödeme sistemi açık)
+- `android/` — Google Play için TWA uygulaması (Bubblewrap 1.27; Google Play ödeme sistemi açık). Derleme: `android\gradlew bundleRelease assembleRelease`; imzalama: `android\imzala.ps1` (şifreyi Selim girer, anahtar git'e girmez)
 - `yonetim.html` — yönetim paneli (yalnız `yoneticiler` tablosundakiler açabilir; Ayarlar'da bağlantısı çıkar)
 - `manifest.webmanifest`, `sw.js`, `ikon-*.png`, `og.png` — telefona uygulama gibi kurulum ve paylaşım görseli
 - `supabase/functions/odeme/index.ts` — Edge Function: iyzico Checkout Form başlatma, dönüş doğrulama, yarım kalan ödeme kontrolü
