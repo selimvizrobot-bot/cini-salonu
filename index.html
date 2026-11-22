@@ -125,6 +125,16 @@ h4{font:700 16px Rubik,sans-serif;color:var(--gold2);margin:18px 0 10px}
 .nick{background:none;border:0;padding:0;min-height:0;font-size:14px;text-decoration:underline dotted;cursor:pointer}
 .dot{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--gold);color:#3a0a16;font-size:12px;font-weight:800;margin-left:6px}.dot:empty{display:none}
 .box textarea{margin-top:4px}
+.otable{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) minmax(0,1fr);grid-template-areas:". s2 ." "s3 c s1";gap:10px;align-items:center;background:radial-gradient(ellipse,#1d6b4a,#0f3d2a);border:3px solid #a8761e;border-radius:22px;padding:14px;margin:0 auto;max-width:640px}
+.seat{background:#00000040;border-radius:14px;padding:8px;font-size:13px;color:var(--gold2);min-height:84px;display:grid;justify-items:center;gap:4px}
+.seat b{font:700 14px Rubik,sans-serif}.seat.on{box-shadow:0 0 0 3px var(--gold)}.s1{grid-area:s1}.s2{grid-area:s2}.s3{grid-area:s3}
+.ocenter{grid-area:c;display:grid;gap:8px;justify-items:center}.oind{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--gold2)}.oind small{color:var(--mut)}
+.orow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.orack{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;background:linear-gradient(#8a5a2b,#5e3a18);padding:12px 10px;border-radius:14px;max-width:640px;margin:0 auto 14px;box-shadow:inset 0 -6px 0 #3e250e;min-height:76px}
+.ot{width:clamp(30px,6.4vw,40px);height:clamp(44px,9vw,56px);min-height:0;padding:0;background:#fffaf2;border:0;border-radius:6px;display:grid;place-items:center;font:800 clamp(16px,3.4vw,22px) Rubik,sans-serif;box-shadow:0 3px 0 #c9b8a0;position:relative;cursor:pointer}
+.ot:hover{background:#fffaf2}.ot.c0{color:#c41e3a}.ot.c1{color:#c98f22}.ot.c2{color:#1f5fd1}.ot.c3{color:#1a1014}
+.ot.sel{transform:translateY(-8px);box-shadow:0 0 0 3px var(--tq),0 6px 10px #0006}.ot.wild::after{content:"okey";position:absolute;bottom:2px;font-size:8px;color:#8a5a12;letter-spacing:.02em}
+.ot.mini{width:28px;height:40px;font-size:15px;cursor:default}
 .passinfo{margin:-6px 0 14px;font-size:14px;color:var(--mut);min-height:20px}.passinfo b{color:var(--tq)}
 .wallet{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;align-items:center;margin:12px auto 0;font-size:14px;color:var(--mut)}
 .wallet b{font:700 18px Rubik,sans-serif;color:var(--gold2)}.gem{width:18px;height:18px;vertical-align:-3px}
@@ -160,7 +170,7 @@ h4{font:700 16px Rubik,sans-serif;color:var(--gold2);margin:18px 0 10px}
 <div class="tabs" role="tablist">
   <button class="on" data-t="slot">Slot</button>
   <button data-t="poker">Video Poker</button>
-  <button data-t="okey">Okey <small>yakında</small></button>
+  <button data-t="okey">Okey</button>
   <button data-t="sosyal">Tanış<span class="dot" id="socDot"></span></button>
 </div>
 
@@ -191,10 +201,25 @@ h4{font:700 16px Rubik,sans-serif;color:var(--gold2);margin:18px 0 10px}
 
     <section id="g-okey" class="machine okey" hidden>
       <div class="marquee">Okey Masası</div>
-      <div class="rack" aria-hidden="true">
-        <span class="tile t-r">5</span><span class="tile t-r">6</span><span class="tile t-r">7</span><span class="tile t-b">9</span><span class="tile t-y">9</span><span class="tile t-k">9</span><span class="tile t-b">11</span><span class="tile t-b">12</span><span class="tile t-b">13</span><span class="tile t-y">2</span><span class="tile t-y">3</span>
+      <p class="passinfo" id="pi-okey"></p>
+      <div class="otable">
+        <div class="seat s2" id="seat2"></div>
+        <div class="seat s3" id="seat3"></div>
+        <div class="ocenter">
+          <div class="oind">Gösterge <span id="oInd">–</span><small id="oOk"></small></div>
+          <div class="orow"><button id="oPile" class="sm">Ortadan çek <b id="oCnt"></b></button><button id="oTake" class="sm">Yandakini al <span id="oTakeT"></span></button></div>
+        </div>
+        <div class="seat s1" id="seat1"></div>
       </div>
-      <p>Sıradaki sürümde: 3 yapay zekâ rakip, gösterge ve okey taşı, el bitirme kontrolü, haftalık okey ligi. Şimdilik Slot ve Video Poker ile hangisinin daha çok tuttuğunu ölçüyoruz.</p>
+      <div class="msg" id="oMsg">Bahsini seç ve yeni el başlat. Rakipler bilgisayardır.</div>
+      <div class="orack" id="oRack" aria-label="Istakan"></div>
+      <div class="ctrl">
+        <div class="bet"><button id="oMinus" aria-label="Bahsi azalt">−</button><div><small>El bahsi</small><b id="oBet">0</b></div><button id="oPlus" aria-label="Bahsi artır">+</button></div>
+        <button id="oSortR" class="sm">Seri diz</button><button id="oSortP" class="sm">Çift diz</button>
+        <button id="oDisc" class="sm">Seçili taşı at</button><button id="oFin" class="sm">Bitir</button>
+        <button id="oNew" class="big">YENİ EL</button>
+      </div>
+      <p class="safe">Taşa dokun: seçilir. Seçiliyken başka taşa dokun: yer değiştirir. Kazanan elde bahsin 4 katını alır; masa biterse bahis iade edilir.</p>
     </section>
 
     <section id="g-sosyal" class="machine social" hidden>
@@ -304,8 +329,8 @@ if(stage===0){if(S.coins<bet)return outOfCoins(bet);if(!(await ensurePass('poker
 else{tick();hand=hand.map((c,i)=>held[i]?c:deck.shift());const e=evalHand(hand);stage=0;held=[];renderHand();$('#pDeal').textContent='DAĞIT';renderPT(e);if(e>=0){const w=bet*PT[e][1];S.coins+=w;S.m.won+=w;S.m.pwins++;$('#pMsg').innerHTML=`${PT[e][0]}! <b>+${fmt(w)}</b>`}else $('#pMsg').textContent='Kazanan el yok. Yeniden dağıt.';hud()}}
 
 /* bahis */
-function renderBets(){$('#sBet').textContent=fmt(BETS[S.sb]);$('#pBet').textContent=fmt(BETS[S.pb]);renderSlotPay();renderPT(stage===1?lastHi:-1)}
-function betStep(key,d){if(key==='pb'&&stage===1)return;if(key==='sb'&&spinning)return;const n=S[key]+d;if(n<0||n>=BETS.length)return;if(n>maxBetIdx()){toast(`${fmt(BETS[n])} bahis Seviye ${2*(n-1)}'de açılır`);return}S[key]=n;renderBets();save()}
+function renderBets(){$('#sBet').textContent=fmt(BETS[S.sb]);$('#pBet').textContent=fmt(BETS[S.pb]);$('#oBet').textContent=fmt(BETS[S.ob]);renderSlotPay();renderPT(stage===1?lastHi:-1)}
+function betStep(key,d){if(key==='pb'&&stage===1)return;if(key==='ob'&&O.phase==='play')return toast('El sürerken bahis değişmez.');if(key==='sb'&&spinning)return;const n=S[key]+d;if(n<0||n>=BETS.length)return;if(n>maxBetIdx()){toast(`${fmt(BETS[n])} bahis Seviye ${2*(n-1)}'de açılır`);return}S[key]=n;renderBets();save()}
 
 /* ───────── sosyal: Tanış + masa sohbeti (Supabase) ───────── */
 const CFG=window.CINI_CONFIG||{},SBJS='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
@@ -313,7 +338,7 @@ let sb=null,me=null,myP=null,socTab='kisiler',room='slot',roomCh=null,dmCh=null,
 const GIFT={lale:['Lale',2],fincan:['Çay',3],nar:['Nar',5],yildiz:['Çini yıldız',10]};
 let passes={};
 const hm=t=>new Date(t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
-function renderPassInfo(){['slot','poker'].forEach(g=>{const el=$('#pi-'+g);if(!el)return;if(!CFG.url||!CFG.key){el.textContent='';return}
+function renderPassInfo(){['slot','poker','okey'].forEach(g=>{const el=$('#pi-'+g);if(!el)return;if(!CFG.url||!CFG.key){el.textContent='';return}
   el.innerHTML=passes[g]>Date.now()?`Masa biletin geçerli · bitiş saati <b>${hm(passes[g])}</b>`:'Masaya giriş 1 elmas · bilet 1 saat geçerli'})}
 async function loadPasses(){passes={};if(sb&&me&&myP){const {data}=await sb.from('game_passes').select('*');(data||[]).forEach(p=>{passes[p.game]=new Date(p.valid_until).getTime()})}renderPassInfo()}
 async function ensurePass(g){
@@ -460,7 +485,58 @@ function addRoom(m){const l=$('#rList');if(l.querySelector(`[data-mid="${m.id}"]
 $('#rList').addEventListener('click',e=>{const b=e.target.closest('.nick');if(!b)return;if(!peers[b.dataset.id])peers[b.dataset.id]={id:b.dataset.id,nick:b.dataset.n};personModal(b.dataset.id)});
 $('#fRoom').addEventListener('submit',async e=>{e.preventDefault();const t=$('#rIn').value.trim();if(!t||!sb)return;const {data:m,error}=await sb.from('room_messages').insert({room,body:t}).select().single();if(error){toast(errTxt(error));return}$('#rIn').value='';addRoom(m)});
 
+/* ───────── okey (3 bilgisayar rakip) ───────── */
+const OC=['Kırmızı','Sarı','Mavi','Siyah'],BOTS=['Bilgisayar · Lale','Bilgisayar · Nar','Bilgisayar · Çini'];
+let O={phase:'idle',hands:[[],[],[],[]],pile:[],disc:[[],[],[],[]],ind:null,ok:null,turn:0,bet:0,sel:-1};
+if(S.ob==null)S.ob=1;
+function oDeck(){const d=[];let id=0;for(let k=0;k<2;k++)for(let c=0;c<4;c++)for(let n=1;n<=13;n++)d.push({id:id++,c,n,f:false});d.push({id:id++,c:-1,n:0,f:true},{id:id++,c:-1,n:0,f:true});for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]]}return d}
+const isWild=(t,ok)=>!t.f&&t.c===ok.c&&t.n===ok.n;
+const tval=(t,ok)=>t.f?[ok.c,ok.n]:[t.c,t.n];
+function canFinish(ts,ok){if(ts.length!==14)return false;let j=0;const v=[];for(const t of ts){if(isWild(t,ok))j++;else v.push(tval(t,ok))}
+  const cnt={};v.forEach(([c,n])=>{const k=c*20+n;cnt[k]=(cnt[k]||0)+1});let sg=0;Object.values(cnt).forEach(x=>{sg+=x%2});if(sg<=j&&(j-sg)%2===0)return true;
+  v.sort((a,b)=>a[1]-b[1]||a[0]-b[0]);return oSolve(v,j,new Map())}
+function oSolve(v,j,memo){if(!v.length)return true;const key=v.map(x=>x[0]*20+x[1]).join(',')+'|'+j;if(memo.has(key))return memo.get(key);let r=false;
+  const [c,n]=v[0],rest=v.slice(1);
+  const same=[];rest.forEach((x,i)=>{if(x[1]===n&&x[0]!==c&&!same.some(s=>rest[s][0]===x[0]))same.push(i)});
+  for(let mask=0;mask<(1<<same.length)&&!r;mask++){const pick=same.filter((_,b)=>mask>>b&1),real=pick.length+1;for(let uj=0;uj<=j&&!r;uj++){const tot=real+uj;if(tot<3||tot>4)continue;r=oSolve(rest.filter((_,i)=>!pick.includes(i)),j-uj,memo)}}
+  if(!r){const cur=rest.slice();let jj=j,len=1;for(let v2=n+1;v2<=14&&!r;v2++){const want=v2===14?1:v2,idx=cur.findIndex(x=>x[0]===c&&x[1]===want);if(idx>=0&&!(v2===14&&n===1))cur.splice(idx,1);else if(jj>0)jj--;else break;len++;if(len>=3&&oSolve(cur.slice(),jj,memo))r=true}}
+  if(!r&&n===1){for(let s=12;s>=2&&!r;s--){const cur=rest.slice();let jj=j,okk=true;for(let v2=s;v2<=13;v2++){const idx=cur.findIndex(x=>x[0]===c&&x[1]===v2);if(idx>=0)cur.splice(idx,1);else if(jj>0)jj--;else{okk=false;break}}if(okk&&oSolve(cur,jj,memo))r=true}}
+  memo.set(key,r);return r}
+function useful(t,hand,ok){if(isWild(t,ok))return 99;const [c,n]=tval(t,ok);let s=0;for(const u of hand){if(u===t||isWild(u,ok))continue;const [c2,n2]=tval(u,ok);if(c2===c){const d=Math.abs(n2-n);if(d===1||d===12)s+=3;else if(d===2||d===11)s+=1;else if(d===0)s+=1}else if(n2===n)s+=3}return s}
+function findFinish(h,ok){for(let i=0;i<h.length;i++){if(isWild(h[i],ok))continue;if(canFinish(h.filter((_,k)=>k!==i),ok))return i}return -1}
+const oMsg=t=>{$('#oMsg').innerHTML=t};
+const otile=(t,i,mini)=>t?`<button class="ot c${t.f?(O.ok?O.ok.c:3):t.c}${!mini&&O.ok&&isWild(t,O.ok)?' wild':''}${!mini&&i===O.sel?' sel':''}${mini?' mini':''}" ${mini?'tabindex="-1" disabled':`data-i="${i}"`} aria-label="${t.f?'sahte okey':OC[t.c]+' '+t.n}">${t.f?'★':t.n}</button>`:'';
+function oRender(){$('#oRack').innerHTML=O.hands[0].map((t,i)=>otile(t,i)).join('')||'<span class="safe">Yeni el başlat.</span>';
+  $('#oInd').innerHTML=O.ind?otile(O.ind,-1,true):'–';$('#oOk').textContent=O.ok?`Okey: ${OC[O.ok.c]} ${O.ok.n}`:'';$('#oCnt').textContent=O.phase==='idle'?'':`(${O.pile.length})`;
+  const lt=O.disc[3][O.disc[3].length-1];$('#oTakeT').innerHTML=lt?otile(lt,-1,true):'';
+  const my=O.phase==='play'&&O.turn===0&&O.hands[0].length===14;$('#oPile').disabled=!my;$('#oTake').disabled=!my||!lt;
+  for(let i=1;i<4;i++){const d=O.disc[i],l=d[d.length-1],el=$('#seat'+i);el.classList.toggle('on',O.phase==='play'&&O.turn===i);el.innerHTML=`<b>${BOTS[i-1]}</b><span>${O.phase==='idle'?'':O.hands[i].length+' taş'}</span>${l?otile(l,-1,true):''}`}}
+function oSort(m){const ok=O.ok;if(!ok)return;const key=t=>{if(isWild(t,ok))return 999;const [c,n]=tval(t,ok);return m==='r'?c*20+n:n*10+c};O.hands[0].sort((a,b)=>key(a)-key(b));O.sel=-1;oRender()}
+async function oNew(){if(O.phase==='play')return toast('El sürüyor.');const bet=BETS[S.ob];if(S.coins<bet)return outOfCoins(bet);if(!(await ensurePass('okey')))return;if(!canPlay())return;
+  S.coins-=bet;addXp(bet/5);O.bet=bet;const d=oDeck();O.ind=d.splice(d.findIndex(t=>!t.f),1)[0];O.ok={c:O.ind.c,n:O.ind.n%13+1};
+  O.hands=[d.splice(0,15),d.splice(0,14),d.splice(0,14),d.splice(0,14)];O.pile=d;O.disc=[[],[],[],[]];O.turn=0;O.sel=-1;O.phase='play';
+  oSort('r');oMsg('Dağıtıcı sensin: 15 taşın var. Bir taş seçip at; el bitiyorsa Bitir.');hud()}
+function oNext(){if(O.phase!=='play')return;oRender();if(O.turn===0){oMsg(O.hands[0].length===14?'Sıra sende: ortadan çek ya da yandakini al.':'Sıra sende: bir taş at.');return}const i=O.turn;setTimeout(()=>oBot(i),RM?20:650)}
+function oBot(i){if(O.phase!=='play'||O.turn!==i)return;const h=O.hands[i],prev=O.disc[(i+3)%4],top=prev[prev.length-1];let took=false;
+  if(top){const t2=h.concat([top]);if(findFinish(t2,O.ok)>=0||useful(top,t2,O.ok)>=4){h.push(prev.pop());took=true}}
+  if(!took){if(!O.pile.length)return oDraw();h.push(O.pile.pop())}
+  const fi=findFinish(h,O.ok);if(fi>=0){O.disc[i].push(h.splice(fi,1)[0]);return oEnd(i)}
+  let wi=-1,ws=1e9;h.forEach((t,k)=>{if(isWild(t,O.ok))return;const u=useful(t,h,O.ok)+Math.random();if(u<ws){ws=u;wi=k}});O.disc[i].push(h.splice(wi,1)[0]);
+  O.turn=(i+1)%4;oNext()}
+function oSel(i){if(O.phase==='idle')return;const h=O.hands[0];if(O.sel===-1)O.sel=i;else if(O.sel===i)O.sel=-1;else{[h[O.sel],h[i]]=[h[i],h[O.sel]];O.sel=-1}oRender()}
+function oMyDraw(fromLeft){if(O.phase!=='play'||O.turn!==0||O.hands[0].length!==14)return;if(fromLeft){const p=O.disc[3];if(!p.length)return;O.hands[0].push(p.pop())}else{if(!O.pile.length)return oDraw();O.hands[0].push(O.pile.pop())}
+  O.sel=O.hands[0].length-1;oMsg('Bir taş seç ve at. El bitiyorsa atacağın taşı seçip Bitir.');oRender()}
+function oDiscard(){if(O.phase!=='play'||O.turn!==0)return;if(O.hands[0].length!==15)return toast('Önce çekmen gerekiyor.');if(O.sel<0)return toast('Atmak için bir taş seç.');O.disc[0].push(O.hands[0].splice(O.sel,1)[0]);O.sel=-1;O.turn=1;oNext()}
+function oFinish(){if(O.phase!=='play'||O.turn!==0)return;if(O.hands[0].length!==15)return toast('Bitirmek için önce çekmen gerekiyor.');if(O.sel<0)return toast('Bitirirken atacağın taşı seç.');
+  if(!canFinish(O.hands[0].filter((_,k)=>k!==O.sel),O.ok))return oMsg('Bu taşı atınca el bitmiyor. Dizilişini kontrol et.');O.disc[0].push(O.hands[0].splice(O.sel,1)[0]);O.sel=-1;oEnd(0)}
+function oEnd(w){O.phase='end';if(w===0){const win=O.bet*4;S.coins+=win;S.m.won+=win;oMsg(`<b class="bigwin">Eli bitirdin! +${fmt(win)}</b>`)}else oMsg(`${BOTS[w-1]} eli bitirdi. Bu eli kaybettin.`);hud();oRender()}
+function oDraw(){O.phase='end';S.coins+=O.bet;oMsg('Ortada taş kalmadı; el berabere, bahsin iade edildi.');hud();oRender()}
+window.OkeyTest={canFinish,findFinish,useful,state:()=>O};
+
 /* olaylar */
+$('#oRack').addEventListener('click',e=>{const b=e.target.closest('.ot[data-i]');if(b)oSel(+b.dataset.i)});
+$('#oPile').onclick=()=>oMyDraw(false);$('#oTake').onclick=()=>oMyDraw(true);$('#oDisc').onclick=oDiscard;$('#oFin').onclick=oFinish;$('#oNew').onclick=oNew;
+$('#oSortR').onclick=()=>oSort('r');$('#oSortP').onclick=()=>oSort('p');$('#oMinus').onclick=()=>betStep('ob',-1);$('#oPlus').onclick=()=>betStep('ob',1);
 $('#sSpin').onclick=spin;$('#pDeal').onclick=pDeal;
 $('#sMinus').onclick=()=>betStep('sb',-1);$('#sPlus').onclick=()=>betStep('sb',1);
 $('#pMinus').onclick=()=>betStep('pb',-1);$('#pPlus').onclick=()=>betStep('pb',1);
@@ -472,7 +548,7 @@ document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.cl
 document.addEventListener('keydown',e=>{if(e.code!=='Space'||!$('#modal').hidden||['BUTTON','INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;e.preventDefault();if(!$('#g-slot').hidden)spin();else if(!$('#g-poker').hidden)pDeal()});
 
 /* başlangıç */
-dayCheck();S.sb=Math.min(S.sb,maxBetIdx());S.pb=Math.min(S.pb,maxBetIdx());
+dayCheck();S.sb=Math.min(S.sb,maxBetIdx());S.pb=Math.min(S.pb,maxBetIdx());S.ob=Math.min(S.ob,maxBetIdx());oRender();
 renderHand();renderBets();hud();setInterval(()=>{dayCheck();hud();renderPassInfo()},30000);socInit();renderPassInfo();
 if(!S.ageOk){modal(`<h2>18 yaşından büyük müsün?</h2><p>Çini Salonu bir sosyal casino oyunudur. Jetonların gerçek para değeri yoktur; nakde, kriptoya ya da ödüle çevrilemez.</p><div class="row"><button class="big" id="aYes">Evet, 18+</button><button class="ghost" id="aNo">Hayır</button></div>`,false);$('#aYes').onclick=()=>{S.ageOk=true;save();closeM();toast('Hoş geldin! 10.000 jetonla başlıyorsun.')};$('#aNo').onclick=()=>{$('#mBox').innerHTML='<h2>Üzgünüz</h2><p>Bu oyun yalnızca 18 yaş ve üstü içindir.</p>'}}
 }
