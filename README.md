@@ -14,7 +14,7 @@ Sosyal casino (sanal jeton, paraya çevrilemez) + gerçek oyuncular arasında g�
 - `manifest.webmanifest`, `sw.js`, `ikon-*.png`, `og.png` — telefona uygulama gibi kurulum ve paylaşım görseli
 - `supabase/functions/odeme/index.ts` — Edge Function: iyzico Checkout Form başlatma, dönüş doğrulama, yarım kalan ödeme kontrolü
 - `yasal.html` — ön bilgilendirme, mesafeli satış, iade, ödeme KVKK metni (TASLAK)
-- `test/` — yerel testler: `test.sql` (kurallar), `e2e.js` (57 adım, sayfa + veritabanı), `okey.js` (17), `yonetim.js` (31), `odeme.js` (58: ödeme kuralları + fonksiyon, imza resmi iyzico kütüphanesiyle karşılaştırılır)
+- `test/` — yerel testler: `test.sql` (kurallar), `e2e.js` (57 adım, sayfa + veritabanı), `okey.js` (17), `yonetim.js` (31), `odeme.js` (66: ödeme kuralları + fonksiyon, imza resmi iyzico kütüphanesiyle karşılaştırılır)
 
 ## Kurulum
 1. supabase.com'da yeni proje aç (ücretsiz katman yeterli).
@@ -49,6 +49,9 @@ Sosyal casino (sanal jeton, paraya çevrilemez) + gerçek oyuncular arasında g�
 Akış: Mağaza → fatura formu + onaylar → `odeme` fonksiyonu kayıt açar, iyzico Checkout Form başlatır → kullanıcı iyzico sayfasında öder
 → iyzico, fonksiyona `token` döner → fonksiyon ödemeyi iyzico'dan sorgular (durum, tutar, sepet, imza) → `odeme_tamamla()` elmas yükler → siteye `#odeme-ok`.
 Dönüş kaçarsa kullanıcı siteye girdiğinde yarım kalan ödeme yeniden sorgulanır; 1 saatte tamamlanmayan kapanır.
+Ayrıca iyzico bildirimi (webhook) aynı adrese gelir: kullanıcı sayfayı kapatsa da ödeme 10–15 sn içinde sonuçlanır.
+iyzico panel → Ayarlar → Firma Ayarları → Firma Bildirimleri: `https://pranxyonsbbzedvpwnza.supabase.co/functions/v1/odeme`.
+İmzalı bildirim (X-IYZ-SIGNATURE-V3) için iyzico'dan açtırılabilir (entegrasyon@iyzico.com); imza gelirse doğrulanır, gelmese de elmas yalnız iyzico sorgusuyla yüklenir.
 
 Kurulum:
 1. Edge Functions → Deploy new function → adı `odeme`, kod `supabase/functions/odeme/index.ts` → Deploy.

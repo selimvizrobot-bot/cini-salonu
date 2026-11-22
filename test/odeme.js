@@ -166,6 +166,25 @@ const sonId = () => iyz.init[iyz.init.length - 1].conversationId;
   const cc = await pool.connect(); await cc.query(`set session_replication_role = replica; update public.odemeler set created_at = now() - interval '2 hours' where id = '${oY}'; reset session_replication_role`); cc.release();
   c = await cagir({ islem: 'kontrol' }, 'eyJ.A'); const sY = await satir(oY); ok(sY.durum === 'hata' && sY.hata === 'zaman aşımı', 'Süresi geçen yarım ödeme kapandı');
 
+  console.log('iyzico bildirimi (webhook)');
+  const bil = async (o, imza) => { const r = await handler(new Request('https://f/odeme', { method: 'POST', headers: { 'content-type': 'application/json', ...(imza ? { 'x-iyz-signature-v3': imza } : {}) }, body: JSON.stringify(o) })); return { s: r.status, j: await r.json() }; };
+  const bimza = o => crypto.createHmac('sha256', SIR).update(SIR + o.iyziEventType + o.iyziPaymentId + o.token + o.paymentConversationId + o.status).digest('hex');
+  wA = await cuzdan(A);
+  await cagir({ islem: 'baslat', paket: 'e50', fatura: F }, 'eyJ.A');
+  let ev = { paymentConversationId: sonId(), merchantId: '1', token: sonToken(), status: 'SUCCESS', iyziReferenceCode: 'r1', iyziEventType: 'CHECKOUT_FORM_AUTH', iyziEventTime: Date.now(), iyziPaymentId: 777 };
+  let b = await bil(ev, 'yanlis-imza'); ok(b.s === 401 && (await cuzdan(A)) === wA, 'Yanlış imzalı bildirim reddedildi');
+  b = await bil(ev, bimza(ev)); ok(b.s === 200 && b.j.durum === 'ok' && (await cuzdan(A)) === wA + 50, 'İmzalı bildirimle (sayfa kapansa da) 50 elmas yüklendi');
+  b = await bil(ev, bimza(ev)); ok(b.s === 200 && (await cuzdan(A)) === wA + 50, 'Bildirim tekrar gelse de ikinci kez yüklenmedi');
+  d = await donus(ev.token); ok(d.yer.endsWith('#odeme-ok') && (await cuzdan(A)) === wA + 50, 'Bildirimden sonra gelen tarayıcı dönüşü de tek yükleme');
+  await cagir({ islem: 'baslat', paket: 'e50', fatura: F }, 'eyJ.A');
+  ev = { ...ev, paymentConversationId: sonId(), token: sonToken() };
+  b = await bil(ev); ok(b.s === 200 && (await cuzdan(A)) === wA + 100, 'İmzasız bildirim de çalışıyor (elmas yine iyzico sorgusuyla doğrulanıyor)');
+  await cagir({ islem: 'baslat', paket: 'e50', fatura: F }, 'eyJ.A'); iyz.senaryo[sonToken()] = { status: 'failure' };
+  ev = { ...ev, paymentConversationId: sonId(), token: sonToken() };
+  b = await bil(ev, bimza(ev)); ok(b.s === 503 && (await cuzdan(A)) === wA + 100, 'iyzico "başarılı" der ama sorgu doğrulamazsa yükleme yok, yeniden deneme istenir');
+  b = await bil({ iyziEventType: 'CHECKOUT_FORM_AUTH', token: 'tok-olmayan-1', status: 'SUCCESS', paymentConversationId: 'x', iyziPaymentId: 1 }); ok(b.s === 200 && (await cuzdan(A)) === wA + 100, 'Bilinmeyen tokenlı sahte bildirim etkisiz');
+  b = await bil({ iyziEventType: 'SUBSCRIPTION_ORDER_SUCCESS', token: 'x' }); ok(b.s === 200, 'İlgisiz olay türü sessizce geçiliyor');
+
   console.log('Harcama sınırı');
   const C = 'cccccccc-0000-0000-0000-00000000000c';
   await pool.query(`insert into auth.users values ($1,'c@x.test')`, [C]);

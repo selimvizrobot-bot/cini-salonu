@@ -4,6 +4,7 @@
 //  POST form {token}                         iyzico dönüşü → ödemeyi iyzico'dan sorgula, elması yükle, siteye 303
 //  POST JSON {islem:'baslat', paket, fatura} kullanıcı jetonuyla → {url} (iyzico ödeme sayfası)
 //  POST JSON {islem:'kontrol'}               kullanıcı jetonuyla → yarım kalan ödemeleri yeniden sorgula → {eklenen}
+//  POST JSON {iyziEventType,...}            iyzico bildirimi (webhook): ödemeyi iyzico'dan sorgulayıp sonuçlandır
 //
 // Sırlar (Dashboard → Edge Functions → Secrets): IYZICO_API_KEY, IYZICO_SECRET_KEY
 // İsteğe bağlı: IYZICO_BASE_URL (varsayılan sandbox), SITE_URL, ODEME_DONUS_URL
@@ -137,6 +138,22 @@ async function donus(req) {
   } catch (e) { console.error(e); return git('hata'); }
 }
 
+// iyzico bildirimi. Elmas yine yalnız iyzico'dan sorgulanan sonuçla yüklenir; bildirim yalnız tetikler.
+// İmza (X-IYZ-SIGNATURE-V3) geldiyse doğrulanır: HMAC-SHA256(sır, sır+olay+ödemeNo+token+konuşmaNo+durum), hex.
+async function bildirim(req, g) {
+  const imza = req.headers.get('x-iyz-signature-v3'), sir = env('IYZICO_SECRET_KEY');
+  if (imza && sir) {
+    const b = await hmac(sir, sir + (g.iyziEventType ?? '') + (g.iyziPaymentId ?? '') + (g.token ?? '') + (g.paymentConversationId ?? '') + (g.status ?? ''));
+    if (b !== imza) return json({ ok: false }, 401);
+  }
+  const token = String(g.token || '');
+  if (g.iyziEventType !== 'CHECKOUT_FORM_AUTH' || !/^[\w-]{8,200}$/.test(token)) return json({ ok: true });
+  const s = await sonuclandir(token);
+  // iyzico başarı diyor ama sorgu henüz doğrulamadıysa 2xx dönme: iyzico 15 dk sonra yeniden yollar
+  if (g.status === 'SUCCESS' && (s === 'bekliyor' || s === 'belirsiz')) return json({ ok: false, durum: s }, 503);
+  return json({ ok: true, durum: s });
+}
+
 async function kontrol(u) {
   const once = new Date(Date.now() - 7 * 864e5).toISOString();
   const rows = (await db('odemeler?select=*&user_id=eq.' + u.id + '&durum=in.(bekliyor,inceleme)&created_at=gte.' + encodeURIComponent(once))) || [];
@@ -156,6 +173,7 @@ Deno.serve(async req => {
   if (ct.includes('application/x-www-form-urlencoded') || ct.includes('multipart/form-data')) return donus(req);
   try {
     const g = await req.json().catch(() => ({}));
+    if (g && g.iyziEventType) return await bildirim(req, g);
     const u = await kullanici(req);
     if (!u) return json({ hata: 'Giriş yapmalısın.' }, 401);
     if (g.islem === 'baslat') return await baslat(req, u, g);
