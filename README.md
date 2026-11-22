@@ -8,13 +8,14 @@ Sosyal casino (sanal jeton, paraya çevrilemez) + gerçek oyuncular arasında g�
 - `supabase/002_elmas.sql` — elmas cüzdanı (yeni hesaba 20), her özel mesaj 1 elmas, hediyeler (lale 2, çay 3, nar 5, yıldız 10)
 - `supabase/003_bilet.sql` — oyun masası bileti: 1 elmas = 1 saat, oyun başına
 - `supabase/004_odeme.sql` — iyzico ödeme kayıtları; paket fiyatı veritabanında sabit, elmas yalnız doğrulanmış ödemeye bir kez yüklenir
+- `supabase/005_sinir.sql` — aylık harcama sınırı: en fazla 1000 ₺/ay; düşürme hemen, yükseltme 24 saat sonra
 - `supabase/functions/odeme/index.ts` — Edge Function: iyzico Checkout Form başlatma, dönüş doğrulama, yarım kalan ödeme kontrolü
 - `yasal.html` — ön bilgilendirme, mesafeli satış, iade, ödeme KVKK metni (TASLAK)
-- `test/` — yerel testler: `test.sql` (kurallar), `e2e.js` (50 adım, sayfa + veritabanı), `okey.js` (17), `odeme.js` (43: ödeme kuralları + fonksiyon, imza resmi iyzico kütüphanesiyle karşılaştırılır)
+- `test/` — yerel testler: `test.sql` (kurallar), `e2e.js` (55 adım, sayfa + veritabanı), `okey.js` (17), `odeme.js` (58: ödeme kuralları + fonksiyon, imza resmi iyzico kütüphanesiyle karşılaştırılır)
 
 ## Kurulum
 1. supabase.com'da yeni proje aç (ücretsiz katman yeterli).
-2. SQL Editor → sırayla `schema.sql`, `002_elmas.sql`, `003_bilet.sql`, `004_odeme.sql` dosyalarını yapıştır → Run.
+2. SQL Editor → sırayla `schema.sql`, `002_elmas.sql`, `003_bilet.sql`, `004_odeme.sql`, `005_sinir.sql` dosyalarını yapıştır → Run.
 3. Authentication → Providers → Email açık; "Confirm email" açık kalsın.
 4. Project Settings → API: `Project URL` ve `anon public` anahtarını `index.html` başındaki
    `window.CINI_CONFIG={url:'...',key:'...'}` satırına yaz. (anon anahtar herkese açık olabilir; güvenliği RLS sağlar. `service_role` anahtarını asla sayfaya koyma.)
@@ -35,6 +36,7 @@ Sosyal casino (sanal jeton, paraya çevrilemez) + gerçek oyuncular arasında g�
 ## Elmas kuralları
 - Elmas yalnız mağazadan alınır; oyunda kazanılmaz, oyuncular arasında aktarılamaz. Hediyeler alana elmas/jeton olarak geçmez.
 - Cüzdana istemciden yazılamaz; düşüm yalnız sunucudaki tetikleyicilerde olur.
+- Aylık harcama sınırı: varsayılan ve tavan 1000 ₺ (`sinir_tavan()`). Kullanıcı Ayarlar'dan 0–1000 ₺ arası seçer; sayılan: bu ay ödenen, incelemede ve son 1 saatte açılmış ödemeler.
 - Paketler: 50 elmas 29,99 ₺ · 150 elmas 79,99 ₺ · 400 elmas 179,99 ₺ (fiyat `paket_bilgi()` içinde). Jeton satılmaz.
 - Elle yükleme / telafi gerekirse: SQL Editor →
   `select public.admin_elmas_ekle('<kullanıcı-id>', 150, 'satin_alma', '<ödeme-no>');`
@@ -60,7 +62,7 @@ iyzico'nun kabul etmediği iş modelleri arasında kumar/bahis siteleri var; ba�
 ## Yayına çıkmadan önce
 - KVKK aydınlatma metni ve kullanım şartları (avukat onaylı) — kayıt ekranındaki onay kutuları bunlara bağlanmalı.
 - Gerçek kimlikle yaş doğrulama hizmeti (şu an yaş beyana dayalı + şikâyet sistemi).
-- Ödeme: iyzico canlı onayı (yukarıda), mobil uygulama olursa Google Play / App Store kuralları, aylık harcama sınırı.
+- Ödeme: iyzico canlı onayı (yukarıda), mobil uygulama olursa Google Play / App Store kuralları.
 - Moderasyon: şikâyetlere 24 saat içinde dönülmesi.
 
 ## Testleri çalıştırma

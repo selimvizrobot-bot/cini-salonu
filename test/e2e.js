@@ -59,6 +59,8 @@ function makeClient() {
       if (fn === 'discover') return asUser(uid, 'select * from public.discover($1)', [a.p_limit]);
       if (fn === 'people') return asUser(uid, 'select * from public.people($1::uuid[])', [a.ids]);
       if (fn === 'delete_me') return asUser(uid, 'select public.delete_me()', []);
+      if (fn === 'harcama_durumu') { const r = await asUser(uid, 'select public.harcama_durumu() as v', []); return r.error ? r : { data: r.data[0].v, error: null }; }
+      if (fn === 'harcama_siniri_ayarla') { const r = await asUser(uid, 'select public.harcama_siniri_ayarla($1) as v', [a.n]); return r.error ? r : { data: r.data[0].v, error: null }; }
       if (fn === 'oyun_bileti') { const r = await asUser(uid, 'select public.oyun_bileti($1) as v', [a.g]); return r.error ? r : { data: r.data[0].v, error: null }; }
     },
     channel: () => ({ on() { return this; }, subscribe() { return this; } }), removeChannel() {},
@@ -220,6 +222,19 @@ await A.w.CiniOdemeTest.kontrol(); await sleep(80);
   ok(fx.calls[fx.calls.length - 1].body.islem === 'kontrol' && /\+150 elmas/.test(A.text('#toast')) && +A.text('#elmasN') === e0 + 150, `Yarım kalan ödeme kontrol edilip yüklendi (${e0} → ${A.text('#elmasN')})`);
   const nC = fx.calls.length; await A.w.CiniOdemeTest.kontrol(); await sleep(30);
   ok(fx.calls.length === nC, 'Bekleyen ödeme yoksa sunucu çağrılmadı');
+  A.click(A.btn('Kapat') || '#modal'); await sleep(20);
+
+  console.log('Harcama sınırı ve satın alımlarım');
+  A.click('#bShop'); await sleep(120);
+  ok(/Bu ay: 79,99 ₺ \/ 1\.000,00 ₺/.test(A.text('#mHist')) && /Satın alımlarım/.test(A.text('#mHist')) && /150 elmas · 79,99 ₺/.test(A.text('#mHist')), 'Mağazada aylık harcama ve satın alım geçmişi: ' + A.text('#mHist').replace(/\s+/g, ' ').slice(0, 120));
+  ok(/Yüklendi/.test(A.text('#mHist')), 'Ödenen alım "Yüklendi" görünüyor');
+  A.click('#mSinir'); await sleep(120);
+  ok(!!A.q('#fHs') && A.q('#fHs').value === '1000', 'Ayarlar\'da sınır seçimi (varsayılan 1.000 ₺)');
+  A.q('#fHs').value = '100'; A.q('#fHs').dispatchEvent(new A.w.Event('change')); await sleep(120);
+  const hs = (await pool.query('select aylik, yeni from public.harcama_siniri where user_id = $1', [aId])).rows[0];
+  ok(/Sınır güncellendi/.test(A.text('#toast')) && +hs.aylik === 100 && hs.yeni === null, 'Sınır 100 ₺\'ye düştü, hemen geçerli');
+  A.q('#fHs').value = '500'; A.q('#fHs').dispatchEvent(new A.w.Event('change')); await sleep(120);
+  ok(/24 saat/.test(A.text('#toast')) && /yükseltmesi/.test(A.text('#fHarc')) && A.q('#fHs').value === '100', 'Yükseltme 24 saat sonraya kondu: ' + A.text('#toast'));
   A.click(A.btn('Kapat') || '#modal'); await sleep(20);
 
   console.log('KVKK silme');

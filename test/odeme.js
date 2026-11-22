@@ -166,6 +166,41 @@ const sonId = () => iyz.init[iyz.init.length - 1].conversationId;
   const cc = await pool.connect(); await cc.query(`set session_replication_role = replica; update public.odemeler set created_at = now() - interval '2 hours' where id = '${oY}'; reset session_replication_role`); cc.release();
   c = await cagir({ islem: 'kontrol' }, 'eyJ.A'); const sY = await satir(oY); ok(sY.durum === 'hata' && sY.hata === 'zaman aşımı', 'Süresi geçen yarım ödeme kapandı');
 
+  console.log('Harcama sınırı');
+  const C = 'cccccccc-0000-0000-0000-00000000000c';
+  await pool.query(`insert into auth.users values ($1,'c@x.test')`, [C]);
+  await pool.query(`insert into public.profiles (id,nick,birth_date,gender,looking_for,kvkk_consent_at) values ($1,'Odeme_C','1980-05-05','kadin','erkek',now())`, [C]);
+  JWT['eyJ.C'] = { id: C, email: 'c@x.test' };
+  const hd = async () => (await as('authenticated', C, 'select public.harcama_durumu() v')).rows[0].v;
+  const ayarla = n => as('authenticated', C, 'select public.harcama_siniri_ayarla($1) v', [n]);
+  const al = p => svc(`insert into public.odemeler (user_id,paket) values ($1,$2) returning id`, [C, p]);
+  let v = await hd(); ok(v.sinir == 1000 && v.harcanan == 0 && v.tavan == 1000, 'Varsayılan sınır 1000 ₺, bu ay harcama 0');
+  r = await ayarla(50); ok(r.rows[0].v.sinir == 50 && r.rows[0].v.yeni === null, 'Sınırı düşürmek hemen geçerli (50 ₺)');
+  r = await al('e50'); ok(!!r.rows, 'Sınır içindeki alım açıldı (29,99)');
+  c = await cagir({ islem: 'baslat', paket: 'e50', fatura: F }, 'eyJ.C');
+  ok(c.s === 400 && /harcama sınırını aşıyor \(bu ay 29,99 ₺, sınır 50,00 ₺\)/.test(c.j.hata), 'Sınırı aşan alım iyzico\'ya gitmeden durdu: ' + c.j.hata);
+  r = await ayarla(500); ok(r.rows[0].v.sinir == 50 && r.rows[0].v.yeni == 500 && r.rows[0].v.yeni_tarih, 'Yükseltme hemen geçmiyor, 24 saat bekliyor');
+  r = await al('e50'); ok(/aşıyor/.test(r.err || ''), 'Beklerken eski sınır geçerli');
+  await pool.query(`update public.harcama_siniri set yeni_tarih = now() - interval '1 second' where user_id = $1`, [C]);
+  v = await hd(); ok(v.sinir == 500 && v.yeni === null, '24 saat dolunca yeni sınır (500 ₺) geçerli');
+  r = await al('e150'); ok(!!r.rows, 'Yeni sınırla alım açıldı');
+  r = await ayarla(2000); ok(/0 ile 1000/.test(r.err || ''), 'Tavanın üstü reddedildi: ' + (r.err || ''));
+  await ayarla(800); r = await ayarla(0); ok(r.rows[0].v.sinir == 0 && r.rows[0].v.yeni === null, 'Düşürmek bekleyen yükseltmeyi iptal ediyor');
+  r = await al('e50'); ok(/aşıyor/.test(r.err || ''), 'Sınır 0 ₺ → alım kapalı');
+  await pool.query(`update public.harcama_siniri set aylik = 1000 where user_id = $1`, [C]);
+  const rp = await pool.connect();
+  await rp.query(`set session_replication_role = replica;
+    update public.odemeler set created_at = now() - interval '2 hours' where user_id = '${C}';
+    insert into public.odemeler (user_id,paket,elmas,tutar,durum,created_at) values
+      ('${C}','e400',400,179.99,'odendi', (date_trunc('month', now() at time zone 'Europe/Istanbul') at time zone 'Europe/Istanbul') - interval '1 minute'),
+      ('${C}','e150',150,79.99,'odendi', now() - interval '3 hours'),
+      ('${C}','e50',50,29.99,'hata', now() - interval '3 hours');
+    reset session_replication_role`); rp.release();
+  v = await hd(); ok(Number(v.harcanan) === 79.99, `Yalnız bu ayın ödenenleri sayılıyor; geçen ay, hata ve süresi geçen yarım ödemeler sayılmıyor (${v.harcanan})`);
+  r = await as('anon', null, 'select public.harcama_durumu()'); ok(/permission/.test(r.err || ''), 'Girişsiz sınır okunamıyor');
+  r = await as('authenticated', C, 'select public.gecerli_sinir($1)', [C]); ok(/permission/.test(r.err || ''), 'İç fonksiyonlar istemciye kapalı');
+  r = await as('authenticated', C, 'select * from public.harcama_siniri'); ok(/permission/.test(r.err || ''), 'Sınır tablosu doğrudan değiştirilemiyor');
+
   console.log('Sınırlar');
   let son;
   for (let i = 0; i < 12; i++) { son = await cagir({ islem: 'baslat', paket: 'e50', fatura: F }, 'eyJ.A'); if (son.s !== 200) break; }
