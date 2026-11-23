@@ -1,4 +1,4 @@
-# Çini Salonu · Google Play için imzalama
+﻿# Çini Salonu · Google Play için imzalama
 # Bu betiği SEN çalıştır: şifreyi sen belirlersin/yazarsın, kimseye gösterilmez.
 #   PowerShell'de:  cd C:\Users\alpou\cini-salonu\android ; powershell -ExecutionPolicy Bypass -File .\imzala.ps1
 # İlk çalıştırmada upload.keystore oluşturur (bu klasörde kalır, git'e girmez), sonra derlenmiş paketi imzalar:
