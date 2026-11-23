@@ -29,7 +29,7 @@
   "isChromeOSOnly": false,
   "isMetaQuest": false,
   "fullScopeUrl": "https://selimvizrobot-bot.github.io/cini-salonu/",
-  "minSdkVersion": 21,
+  "minSdkVersion": 24,
   "orientation": "portrait",
   "fingerprints": [],
   "additionalTrustedOrigins": [],
